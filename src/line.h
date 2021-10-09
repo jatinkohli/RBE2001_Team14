@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 #include <RBE1001Lib.h>
-#include "Chassis.h"
 
 class Line {
     public:

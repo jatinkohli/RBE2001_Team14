@@ -1,9 +1,4 @@
 #include "BlueMotor.h"
-#include <RBE1001Lib.h>
-
-long count = 0; // encoder counter
-// Mutex for the count critical variable
-portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
 // fields for quadrature decoding
 const int X = 5;
@@ -15,6 +10,7 @@ int encoderArray[4][4] = {
 };
 
 int oldValue = 0, newValue = 0, errorCount = 0;
+long count = 0; // encoder counter
 
 /**
  * Interrupt service routine (ISR) for one of the encoder

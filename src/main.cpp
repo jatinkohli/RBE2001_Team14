@@ -40,7 +40,6 @@ ROBOT_STATE robotState = ROBOT_IDLE;
 
 float prevSetTime = 0;
 int effort = 0;
-float count = 0;
 
 void setup() {
     Serial.begin(115200);
@@ -56,6 +55,5 @@ void loop() {                          //remember to stop it before 255
         prevSetTime = time;
     }
 
-    count = blueMotor.getPosition();
-    Serial.printf("%f | %d\n", count, effort); 
+    Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Arduino.h>
+#include <RBE1001Lib.h>
+
 class BlueMotor {
     public:
         void setEffort(int effort);
@@ -15,4 +18,7 @@ class BlueMotor {
         const int ENCB = 18;
         
         void setEffort(int effort, bool clockwise);
+
+        // Mutex for the count critical variable
+        portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 };
