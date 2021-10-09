@@ -5,14 +5,31 @@ long count = 0; // encoder counter
 // Mutex for the count critical variable
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
+// fields for quadrature decoding
+const int X = 5;
+int encoderArray[4][4] = {    
+        {0, -1, 1, X},    
+        {1, 0, X, -1},    
+        {-1, X, 0, 1},    
+        {X, 1, -1, 0}
+};
+
+int oldValue = 0, newValue = 0, errorCount = 0;
+
 /**
  * Interrupt service routine (ISR) for one of the encoder
  * channels. It simply counts how many interrupts occured
  */
-void IRAM_ATTR isr() {
-    portENTER_CRITICAL_ISR(&mux);
-    count++;
-    portEXIT_CRITICAL_ISR(&mux);
+void isr() {  
+    newValue = (digitalRead(3) << 1) | digitalRead(2);
+    int value = encoderArray[oldValue][newValue];
+    if (value == X) {    
+        errorCount++;  
+    } else {    
+        count -= value;  
+    }  
+    
+    oldValue = newValue;
 }
 
 /**
@@ -28,7 +45,9 @@ void BlueMotor::setup() {
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
     pinMode(PWM, OUTPUT);
-    attachInterrupt(ENCA, isr, CHANGE);
+
+    attachInterrupt(ENCA, isr, CHANGE);  
+    attachInterrupt(ENCB, isr, CHANGE);
 }
 
 /**

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLUEMOTOR_H_
+#define BLUEMOTOR_H_
 
 class BlueMotor {
     public:
@@ -16,3 +17,5 @@ class BlueMotor {
         const int ENCA = 19;
         const int ENCB = 18;
 };
+
+#endif
