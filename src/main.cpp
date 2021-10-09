@@ -1,10 +1,12 @@
 #include <RBE1001Lib.h>
 
 #include "BlueMotor.h"
+#include "Chassis.h"
 
 //code for RBE 2001 lab4
 
 BlueMotor blueMotor;
+Chassis chassis;
 
 enum KEY_VALUES { // Key codes for each button on the IR remote
     KEY_VOL_MINUS = 0,
@@ -43,17 +45,13 @@ int effort = 0;
 
 void setup() {
     Serial.begin(115200);
+
+    chassis.setup();
+
     blueMotor.setup();
     blueMotor.reset();
 }
 
-void loop() {                          //remember to stop it before 255
-    float time = millis();
-
-    if (time - prevSetTime >= 100) {
-        blueMotor.setEffort(++effort);
-        prevSetTime = time;
-    }
-
-    Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
+void loop() {
+    chassis.followPath(false);
 }
