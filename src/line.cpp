@@ -1,6 +1,11 @@
 #include "line.h"
 
-void followLine(float baseSpeed) {                                                    //line following
+void Line::setup() {
+    pinMode(LEFT_LINE_SENSE, INPUT);
+    pinMode(RIGHT_LINE_SENSE, INPUT);
+}
+
+void Line::followLine(float baseSpeed, Motor left_motor, Motor right_motor) {                                                    //line following
     unsigned long currTime = millis();
 
     if(currTime - lastTime > LINE_FOLLOWING_INTERVAL) {
@@ -20,7 +25,7 @@ void followLine(float baseSpeed) {                                              
     }
 }
 
-bool checkForIntersection() {                                                                      //check for intersection
+bool Line::checkForIntersection() {                                                                      //check for intersection
     static int leftPrev = 0;
     static int rightPrev = 0;
 
@@ -31,12 +36,12 @@ bool checkForIntersection() {                                                   
         int rightReading = analogRead(RIGHT_LINE_SENSE);
             
         //Check left sensor
-        if(leftReading >= threshhold && leftPrev > threshhold) {
+        if(leftReading >= threshold && leftPrev > threshold) {
             //If left sensor meets threshold, watch for event when right meets threshold
-            return rightReading >= threshhold && rightPrev < threshhold;
-        } else if(rightReading > threshhold) { //Check right sensor
+            return rightReading >= threshold && rightPrev < threshold;
+        } else if(rightReading > threshold) { //Check right sensor
             //If right sensor meets threshold, watch for event when left meets threshold
-            return leftPrev < threshhold && leftReading >= threshhold; 
+            return leftPrev < threshold && leftReading >= threshold; 
         }
 
         rightPrev = rightReading;
@@ -47,7 +52,7 @@ bool checkForIntersection() {                                                   
 }
 
 //Checks for when romi has found a new line after turning at an intersection
-bool checkNewLine(bool right) {                                                                //find the next line
+bool Line::checkNewLine(bool right) {                                                                //find the next line
     static int leftPrev2 = 0;
     static int rightPrev2 = 0;
     
@@ -58,11 +63,11 @@ bool checkNewLine(bool right) {                                                 
         int rightReading = analogRead(RIGHT_LINE_SENSE);
         
         if(right) {
-            if((leftReading < threshhold && rightReading > threshhold) && (leftPrev2 >= threshhold || rightPrev2 <= threshhold)) {
+            if((leftReading < threshold && rightReading > threshold) && (leftPrev2 >= threshold || rightPrev2 <= threshold)) {
                 return true;
             }
         } else {
-            if((leftReading > threshhold && rightReading < threshhold) && (leftPrev2 <= threshhold || rightPrev2 >= threshhold)) {
+            if((leftReading > threshold && rightReading < threshold) && (leftPrev2 <= threshold || rightPrev2 >= threshold)) {
                 return true;
             }
         }

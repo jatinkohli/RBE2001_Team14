@@ -1,5 +1,4 @@
-#ifndef BLUEMOTOR_H_
-#define BLUEMOTOR_H_
+#pragma once
 
 class BlueMotor {
     public:
@@ -7,15 +6,13 @@ class BlueMotor {
         long getPosition();
         void reset();
         void setup();
-        // static portMUX_TYPE mux;
 
     private:
-        void setEffort(int effort, bool clockwise);
         const int PWM = 5;
         const int AIN2 = 23;
         const int AIN1 = 27;
         const int ENCA = 19;
         const int ENCB = 18;
+        
+        void setEffort(int effort, bool clockwise);
 };
-
-#endif

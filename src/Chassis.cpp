@@ -1,34 +1,44 @@
-#include <Chassis.h>
+// #include <Chassis.h>
 
-// Class for the Chassis and everything on it (IR Detector, Drivetrain, Ultrasonic)
+// // Class for the Chassis and everything on it (IR Detector, Drivetrain, Ultrasonic)
 
-// Initializes Chassis fields
-void init() {
-    ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
+// // Initializes Chassis fields
+// void Chassis::setup() {
+//     ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
 
-    pinMode(LEFT_LINE_SENSE, INPUT);
-    pinMode(RIGHT_LINE_SENSE, INPUT);
+//     pinMode(LEFT_LINE_SENSE, INPUT);
+//     pinMode(RIGHT_LINE_SENSE, INPUT);
 
-    // Initialize the button object
-    bootButton.Init();
+//     // Initialize the button object
+//     bootButton.Init();
 
-    // Initialize the decoder
-    decoder.init();
+//     // Initialize the decoder
+//     decoder.init();
 
-    left_motor.attach();
-    right_motor.attach();
+//     left_motor.attach();
+//     right_motor.attach();
 
-    //Some motor admin; be sure to include this with any motor code
-    //Pin definitions can be found in RBE1001Lib.h
+//     line.setup();
 
-    Serial.println("started");
-}
+//     Serial.println("started");
+// }
 
-// Emergency Stop
-void stop() {
-    Serial.println("EMERGENCY STOP -> ACTIVE");
-    left_motor.setSpeed(0);
-    right_motor.setSpeed(0);
+// void Chassis::moveTo(float distInCm) {
 
-    robotState = ROBOT_ACTIVE;
-}
+// }
+
+// void Chassis::followPath(bool turnRightAtIntersection) {
+
+// }
+
+// void Chassis::turnToLine(bool turnRight) {
+    
+// }
+
+// // Emergency Stop
+// void Chassis::stop() {
+//     Serial.println("EMERGENCY STOP");
+
+//     left_motor.setSpeed(0);
+//     right_motor.setSpeed(0);
+// }
