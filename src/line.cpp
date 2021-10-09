@@ -50,7 +50,7 @@ bool Line::checkForIntersection() {                                             
 
     return false;
 }
-
+//;)
 //Checks for when romi has found a new line after turning at an intersection
 bool Line::checkNewLine(bool right) {                                                                //find the next line
     static int leftPrev2 = 0;
