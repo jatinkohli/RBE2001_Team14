@@ -9,7 +9,6 @@
 #include <math.h>
 
 #include <button.h>
-#include <IRdecoder.h>
 #include "line.h"
 
 class Chassis {

@@ -1,12 +1,16 @@
 #include <RBE1001Lib.h>
+#include <IRdecoder.h>
 
 #include "BlueMotor.h"
 #include "Chassis.h"
 
 //code for RBE 2001 lab4
 
+const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
+
 BlueMotor blueMotor;
 Chassis chassis;
+IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
 
 enum KEY_VALUES { // Key codes for each button on the IR remote
     KEY_VOL_MINUS = 0,
@@ -40,7 +44,6 @@ enum ROBOT_STATE {
 // Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
 ROBOT_STATE robotState = ROBOT_IDLE;
 
-float prevSetTime = 0;
 int effort = 0;
 
 void setup() {
@@ -50,8 +53,29 @@ void setup() {
 
     blueMotor.setup();
     blueMotor.reset();
+
+    decoder.init();
 }
 
 void loop() {
-    chassis.followPath(false);
+    int key = decoder.getKeyCode();
+
+    if (key == KEY_VOL_PLUS) {
+        effort++;
+    } else if (key == KEY_STOP) {
+        effort += 10;
+    } else if (key == KEY_RIGHT) {
+        effort += 100;
+    } else if (key == KEY_VOL_MINUS) {
+        effort--;
+    } else if (key == KEY_SETUP) {
+        effort -= 10;
+    } else if (key == KEY_LEFT) {
+        effort -= 100;
+    }
+
+    Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
+    blueMotor.setEffort(effort);
+
+    delay(5);
 }
