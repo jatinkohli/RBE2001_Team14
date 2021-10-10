@@ -85,7 +85,7 @@ void BlueMotor::setEffort(int effort) {
  * effort values range from 0-255
  * clockwise is true for one direction, false for the other
  */
-void BlueMotor::setEffort(int effort, bool clockwise) {
+void BlueMotor::setEffort(int effort, bool clockwise) {       //this is a private version defined insode the class of BlueMotor
     if (clockwise) {
         digitalWrite(AIN1, HIGH);
         digitalWrite(AIN2, LOW);
@@ -98,12 +98,49 @@ void BlueMotor::setEffort(int effort, bool clockwise) {
 }
 
 
-// int incrementEffort(int effort) {
-//     for(int i = 0; i <= 255; i++) {
-//         setEffort(i);
-//     }
-//     return effort;
-// }
+// positionIdeal has the same units as the encoder count
+void BlueMotor::setPosition(int positionIdeal) {             //beginning of the PID control for the encoders/arm positions
+                                                             //input the desired position to the function for the arm
+    if (prevSetpoint != positionIdeal) { // when going to new position, reset accumulated error
+        errorSum = 0;
+        prevSetpoint = positionIdeal;
+    }
+    
+    int effort = 0;                                  
+   
+    int error = positionIdeal - getPosition();
+
+    effort += kp * error; // P
+    effort += ki * errorSum; // I
+    effort += kd * (error - errorThen); // D
+
+    setEffort(effort);
+    
+
+    errorSum += error;
+    errorThen = error;
+
+    Serial.print(errorThen);
+    Serial.print("\t");
+    Serial.print(error);
+    Serial.print("\t");
+    Serial.print(getPosition());
+    Serial.print("\t");
+    Serial.println(effort);
+}
+
+void BlueMotor::stopMotor(){                              //stop the motor
+    setEffort(0);
+}
+
+
+ int BlueMotor::incrementEffort(int effort) {
+     for(int i = 0; i <= 255; i++) {
+         setEffort(i);
+         //Serial.println(effort,  count);
+     }
+     return effort;
+ }
 
 
 //moveFor is blocking?  moves to a cerain number of degrees

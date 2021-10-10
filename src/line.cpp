@@ -1,9 +1,9 @@
 #include "line.h"
 
-void Line::setup() {
-    pinMode(LEFT_LINE_SENSE, INPUT);
-    pinMode(RIGHT_LINE_SENSE, INPUT);
-}
+// void Line::setup() {
+//     pinMode(LEFT_LINE_SENSE, INPUT);
+//     pinMode(RIGHT_LINE_SENSE, INPUT);
+// }                                                            taken out to avoid multiple definitions of setup();
 
 void Line::followLine(float baseSpeed, Motor left_motor, Motor right_motor) {                                                    //line following
     unsigned long currTime = millis();
