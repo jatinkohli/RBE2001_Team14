@@ -1,10 +1,16 @@
 #include <RBE1001Lib.h>
+#include <IRdecoder.h>
 
 #include "BlueMotor.h"
+#include "Chassis.h"
 
 //code for RBE 2001 lab4
 
+const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
+
 BlueMotor blueMotor;
+Chassis chassis;
+IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
 
 enum KEY_VALUES
 { // Key codes for each button on the IR remote
@@ -44,47 +50,71 @@ enum ROBOT_STATE
 // Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
 ROBOT_STATE robotState = firstp; //should be ROBOT_IDLE, but is changed for lab 4
 
-float prevSetTime = 0;
 int effort = 0;
 
 void setup()
 {
     Serial.begin(115200);
+
+    chassis.setup();
+
     blueMotor.setup();
     blueMotor.reset();
+
+    decoder.init();
 }
 
 void loop()
 { //remember to stop effort before 255
+    int key = decoder.getKeyCode();
 
-    switch (robotState)
-    {
-    case firstp:                   //sets the state to the 45 degree angle
-        blueMotor.setPosition(90); //use PID in encoders to put into position specified
-        blueMotor.stopMotor();
-        break; //break out of the state machine
-
-    case secondp:                  //sets the state to the 25 degree angle
-        blueMotor.setPosition(70); //use PID in encoders to put into position specified
-        break;                     //break out of the state machine
-
-    case lowp:                      //sets the state to the platform
-        blueMotor.setPosition(110); //use PID in encoders to put into position specified
-        break;                      //break out of the state machine
-
-    case lab:
-        blueMotor.incrementEffort(0);
-        break;
+    if (key == KEY_VOL_PLUS) {
+        effort++;
+    } else if (key == KEY_STOP) {
+        effort += 10;
+    } else if (key == KEY_RIGHT) {
+        effort += 100;
+    } else if (key == KEY_VOL_MINUS) {
+        effort--;
+    } else if (key == KEY_SETUP) {
+        effort -= 10;
+    } else if (key == KEY_LEFT) {
+        effort -= 100;
     }
 
-    float time = millis();
+    Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
+    blueMotor.setEffort(effort);
 
-    if (time - prevSetTime >= 100)
-    {
-        blueMotor.setEffort(++effort);
-        delay(100);
-        prevSetTime = time;
-    }
+    delay(5);
+
+    // switch (robotState)
+    // {
+    // case firstp:                   //sets the state to the 45 degree angle
+    //     blueMotor.setPosition(90); //use PID in encoders to put into position specified
+    //     blueMotor.stopMotor();
+    //     break; //break out of the state machine
+
+    // case secondp:                  //sets the state to the 25 degree angle
+    //     blueMotor.setPosition(70); //use PID in encoders to put into position specified
+    //     break;                     //break out of the state machine
+
+    // case lowp:                      //sets the state to the platform
+    //     blueMotor.setPosition(110); //use PID in encoders to put into position specified
+    //     break;                      //break out of the state machine
+
+    // case lab:
+    //     blueMotor.incrementEffort(0);
+    //     break;
+    // }
+
+    // float time = millis();
+
+    // if (time - prevSetTime >= 100)
+    // {
+    //     blueMotor.setEffort(++effort);
+    //     delay(100);
+    //     prevSetTime = time;
+    // }
 
     //Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
 }

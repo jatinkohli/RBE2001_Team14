@@ -1,45 +1,66 @@
-// #include <Chassis.h>
+#include <Chassis.h>
 
-// // Class for the Chassis and everything on it (IR Detector, Drivetrain, Ultrasonic)
+// Class for the Chassis and everything on it (Drivetrain, Ultrasonic)
+const uint8_t BOOT_BTN_PIN = 0;
 
-// // Initializes Chassis fields
-// void Chassis::setup() {
-//     ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
+float robotSpeed = 180; // Speed of the robot in ticks/s
 
-//     pinMode(LEFT_LINE_SENSE, INPUT);
-//     pinMode(RIGHT_LINE_SENSE, INPUT);
+Button bootButton(BOOT_BTN_PIN); // Create a button object for the built-in button on the ESP32
+Rangefinder ultrasonic;
+Line line;
 
-//     // Initialize the button object
-//     bootButton.Init();
+// Initializes Chassis fields
+void Chassis::setup() {
+    ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
 
-//     // Initialize the decoder
-//     decoder.init();
+    pinMode(LEFT_LINE_SENSE, INPUT);
+    pinMode(RIGHT_LINE_SENSE, INPUT);
 
-//     left_motor.attach();
-//     right_motor.attach();
+    bootButton.Init();
 
-//     line.setup();
+    line.setup();
 
-//     Serial.println("started");
-// }
+    Serial.println("started");
+}
 
-// void Chassis::moveTo(float distInCm) {
+void Chassis::moveTo(float distInCm) {
+    left_motor.setSpeed(robotSpeed);
+    right_motor.setSpeed(robotSpeed);
+}
 
-// }
+void Chassis::moveFor(float speedInCmPerS) {
+    float speed = 360 * sin(2 * 3.14 * (millis() % 10000) / 10000.);
+	left_motor.setSpeed(speed);
+	right_motor.setSpeed(speed);
 
-// void Chassis::followPath(bool turnRightAtIntersection) {
+	Serial.print("SP: ");
+	Serial.print(speed);
+	Serial.print('\t');
 
-// }
+	Serial.print("L: ");
+	Serial.print(left_motor.getDegreesPerSecond());
+	Serial.print('\t');
 
-// void Chassis::turnToLine(bool turnRight) {
+	Serial.print("E: ");
+	Serial.print(left_motor.getEffortPercent());
+	Serial.print('\n');
+
+	delay(100);
+}
+
+void Chassis::followPath(bool turnRightAtIntersection) {
+    line.followLine(robotSpeed, &left_motor, &right_motor);
+}
+
+void Chassis::turnToLine(bool turnRight) {
     
-// }
+}
 
-// // Emergency Stop
-// void Chassis::stop() {
-//     Serial.println("EMERGENCY STOP");
+// Emergency Stop
+void Chassis::stop() {
+    Serial.println("EMERGENCY STOP");
 
 //     left_motor.setSpeed(0);
 //     right_motor.setSpeed(0);
-// }
+}
 

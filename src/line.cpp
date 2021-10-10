@@ -1,11 +1,13 @@
 #include "line.h"
 
-// void Line::setup() {
-//     pinMode(LEFT_LINE_SENSE, INPUT);
-//     pinMode(RIGHT_LINE_SENSE, INPUT);
-// }                                                            taken out to avoid multiple definitions of setup();
+unsigned long lastTime = 0;
 
-void Line::followLine(float baseSpeed, Motor left_motor, Motor right_motor) {                                                    //line following
+void Line::setup() {
+    pinMode(LEFT_LINE_SENSE, INPUT);
+    pinMode(RIGHT_LINE_SENSE, INPUT);
+}
+
+void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_motor) {  //line following                                            
     unsigned long currTime = millis();
 
     if(currTime - lastTime > LINE_FOLLOWING_INTERVAL) {
@@ -20,8 +22,10 @@ void Line::followLine(float baseSpeed, Motor left_motor, Motor right_motor) {   
         float effort = error * kp;
 
         //command the motors
-        left_motor.setSpeed(baseSpeed - effort);
-        right_motor.setSpeed(baseSpeed + effort);
+        left_motor->setSpeed(baseSpeed - effort);
+        right_motor->setSpeed(baseSpeed + effort);
+
+        lastTime = currTime;
     }
 }
 
