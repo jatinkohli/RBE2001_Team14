@@ -6,6 +6,7 @@
 class BlueMotor {
     public:
         void setEffort(int effort);
+        void setEffortCorrected(int effort);
         long getPosition();
         void reset();
         void setup();
@@ -13,12 +14,15 @@ class BlueMotor {
         void stopMotor();
         int incrementEffort(int effort);
 
+        static const int ENCA = 19;
+        static const int ENCB = 18;
+
     private:
         const int PWM = 5;
-        const int AIN2 = 23;
-        const int AIN1 = 35;    //changed from 27 because 27 was connected to the left drive motor
-        const int ENCA = 19;
-        const int ENCB = 18;
+        const int AIN2 = 25; //changed from 27 because 27 was connected to the left drive motor
+        const int AIN1 = 23;
+
+        const int MIN_EFFORT = 77; // minimum effort for fourbar arm to start moving.
 
         // for position PID
         float kp = .3;
@@ -26,7 +30,7 @@ class BlueMotor {
         float kd = 0; //0.009;
         int errorThen;            //error from the previous loop
         int errorSum;             //sum of the error?
-        int prevSetpoint = 0;     
+        int prevSetpoint = 0;
         
         void setEffort(int effort, bool clockwise);
 

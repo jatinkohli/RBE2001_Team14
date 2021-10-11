@@ -54,7 +54,7 @@ int effort = 0;
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     chassis.setup();
 
@@ -82,8 +82,24 @@ void loop()
         effort -= 100;
     }
 
-    Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
-    blueMotor.setEffort(effort);
+    effort = constrain(effort, -255, 255);
+
+    blueMotor.setEffortCorrected(effort);
+
+    float slope = (255.0 - 77.0) / 255.0;
+    int yInt = 77;
+    int correctedEffort;
+
+    if (effort < 0) {
+        correctedEffort = -((int)(slope * -effort) + yInt);
+    } else {
+        correctedEffort = (int)(slope * effort) + yInt;
+    }
+
+    float rpm = 169.98 * effort / 255.0;
+    rpm = constrain(rpm, -169.98, 169.98);
+
+    Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
 
     delay(5);
 
@@ -116,5 +132,5 @@ void loop()
     //     prevSetTime = time;
     // }
 
-    //Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
+    // Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
 }

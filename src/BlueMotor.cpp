@@ -17,13 +17,13 @@ long count = 0; // encoder counter
  * channels. It simply counts how many interrupts occured
  */
 void isr() {  
-    newValue = (digitalRead(3) << 1) | digitalRead(2);
+    newValue = (digitalRead(BlueMotor::ENCB) << 1) | digitalRead(BlueMotor::ENCA);
     int value = encoderArray[oldValue][newValue];
-    if (value == X) {    
+    if (value == X) {
         errorCount++;  
     } else {    
         count -= value;  
-    }  
+    }
     
     oldValue = newValue;
 }
@@ -80,12 +80,26 @@ void BlueMotor::setEffort(int effort) {
     }
 }
 
+void BlueMotor::setEffortCorrected(int effort) {
+    // slope and y-intercept for function to map corrected effort to non-corrected effort
+    float slope = (255.0 - 77.0) / 255.0; 
+    int yInt = 77;
+
+    if (effort < 0) {
+        setEffort(((int)(slope * -effort) - yInt), true);
+    } else {
+        setEffort(((int)(slope * effort) + yInt), false);
+    }
+}
+
 /**
  * Set the motor effort
  * effort values range from 0-255
  * clockwise is true for one direction, false for the other
  */
 void BlueMotor::setEffort(int effort, bool clockwise) {       //this is a private version defined insode the class of BlueMotor
+    // Serial.printf("inside seteffort internal %d | %d\n", effort, clockwise);
+    
     if (clockwise) {
         digitalWrite(AIN1, HIGH);
         digitalWrite(AIN2, LOW);
@@ -93,6 +107,7 @@ void BlueMotor::setEffort(int effort, bool clockwise) {       //this is a privat
         digitalWrite(AIN1, LOW);
         digitalWrite(AIN2, HIGH);
     }
+
     int value = constrain(effort, 0, 255);
     analogWrite(PWM, value);
 }
