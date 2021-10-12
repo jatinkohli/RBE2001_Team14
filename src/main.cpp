@@ -1,5 +1,6 @@
 #include <RBE1001Lib.h>
 #include <IRdecoder.h>
+#include <ESP32Servo.h>
 
 #include "BlueMotor.h"
 #include "Chassis.h"
@@ -8,9 +9,13 @@
 
 const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
 
+
+
+//global variables and constants
 BlueMotor blueMotor;
 Chassis chassis;
 IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
+Servo gripper;
 
 enum KEY_VALUES
 { // Key codes for each button on the IR remote
@@ -39,18 +44,27 @@ enum KEY_VALUES
 
 enum ROBOT_STATE
 {
-    ROBOT_IDLE,   //robot is waiting for the button press to start it
-    ROBOT_ACTIVE, //press a button and the robot activates
+    //ROBOT_IDLE,   //robot is waiting for the button press to start it
+    //ROBOT_ACTIVE, //press a button and the robot activates
     firstp,       //45 degree position of the arm
     secondp,      //25 degee position of the arm
-    lowp,         //deposit on the 2 inch platform
-    lab
+    UpLow,         //deposit on the 2 inch platform
+    LowUp,        //retrieve the solar panel from the low platform
+    Arriveroof,   //arrive at a roof to pickup a solar pannel
+    ReturnRoof,   //return to the roof in order to deposit the solar panel
+    LeaveRoof,    //leave the 45 degree roof in order to deposit the solar panel
+    roofleave,    //leave the 25 degree roof to deposit the solar pannel
+    
 };
 
 // Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
 ROBOT_STATE robotState = firstp; //should be ROBOT_IDLE, but is changed for lab 4
 
 int effort = 0;
+
+const int STAGING_POS = 0;                   //constants for positions of the arm
+const int ROOF_25_PICKUP = -7078;      //+226 because an adjustment had ot be made from the origional measurement
+const int ROOF_25_PLACE = -6346;
 
 void setup()
 {
@@ -61,11 +75,14 @@ void setup()
     blueMotor.setup();
     blueMotor.reset();
 
+    gripper.attach(SERVO_PIN);
+
     decoder.init();
 }
 
-void loop()
-{ //remember to stop effort before 255
+int setpoint = 0;
+
+void loop() { 
     int key = decoder.getKeyCode();
 
     if (key == KEY_VOL_PLUS) {
@@ -80,28 +97,39 @@ void loop()
         effort -= 10;
     } else if (key == KEY_LEFT) {
         effort -= 100;
+    } else if (key == KEY_PLAY) {                         //staging platform button and position
+        setpoint = STAGING_POS;
+    } else if (key == KEY_UP) {                           //25 degree roof button and position for pickup
+        setpoint = ROOF_25_PICKUP;
+    } else if (key == KEY_ENTER) {                        //25 degreee roof button and position for placement
+        setpoint = ROOF_25_PLACE;
     }
-
     effort = constrain(effort, -255, 255);
 
-    blueMotor.setEffortCorrected(effort);
+    // blueMotor.setEffortCorrected(effort);
+    blueMotor.setPosition(setpoint);
+    
+    // float slope = (255.0 - 77.0) / 255.0;
+    // int yInt = 77;
+    // int correctedEffort;
 
-    float slope = (255.0 - 77.0) / 255.0;
-    int yInt = 77;
-    int correctedEffort;
+    // if (effort < 0) {
+    //     correctedEffort = -((int)(slope * -effort) + yInt);
+    // } else {
+    //     correctedEffort = (int)(slope * effort) + yInt;
+    // }
 
-    if (effort < 0) {
-        correctedEffort = -((int)(slope * -effort) + yInt);
-    } else {
-        correctedEffort = (int)(slope * effort) + yInt;
-    }
+    // float rpm = 169.98 * effort / 255.0;
+    // rpm = constrain(rpm, -169.98, 169.98);
 
-    float rpm = 169.98 * effort / 255.0;
-    rpm = constrain(rpm, -169.98, 169.98);
+    // Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
+    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());         
 
-    Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
+    delay(10);
 
-    delay(5);
+    // int key = decoder.getKeyCode();
+
+    // BlueMotor.setEffort(90);        //2 inch bench
 
     // switch (robotState)
     // {
@@ -114,13 +142,16 @@ void loop()
     //     blueMotor.setPosition(70); //use PID in encoders to put into position specified
     //     break;                     //break out of the state machine
 
-    // case lowp:                      //sets the state to the platform
-    //     blueMotor.setPosition(110); //use PID in encoders to put into position specified
-    //     break;                      //break out of the state machine
+    // case UpLow:                      //sets the state to the platform
+    //     blueMotor.setPosition(110);  //use PID in encoders to put into position specified
+    //     break;                       //break out of the state machine
 
-    // case lab:
-    //     blueMotor.incrementEffort(0);
-    //     break;
+       //case ArriveRoof:                 //arrive following the line at a roof
+           //follow a line 
+           //if a certain distance, stop and adjust to corrrect distance
+           //switch state to fisrtp,
+    
+
     // }
 
     // float time = millis();

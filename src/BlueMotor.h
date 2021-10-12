@@ -25,12 +25,7 @@ class BlueMotor {
         const int MIN_EFFORT = 77; // minimum effort for fourbar arm to start moving.
 
         // for position PID
-        float kp = .3;
-        float ki = 0; //1.0;
-        float kd = 0; //0.009;
-        int errorThen;            //error from the previous loop
-        int errorSum;             //sum of the error?
-        int prevSetpoint = 0;
+        float kp = 1.2;
         
         void setEffort(int effort, bool clockwise);
 

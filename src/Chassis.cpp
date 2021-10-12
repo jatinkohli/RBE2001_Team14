@@ -11,7 +11,7 @@ Line line;
 
 // Initializes Chassis fields
 void Chassis::setup() {
-    ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
+    //ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
 
     pinMode(LEFT_LINE_SENSE, INPUT);
     pinMode(RIGHT_LINE_SENSE, INPUT);
@@ -29,23 +29,17 @@ void Chassis::moveTo(float distInCm) {
 }
 
 void Chassis::moveFor(float speedInCmPerS) {
-    float speed = 360 * sin(2 * 3.14 * (millis() % 10000) / 10000.);
-	left_motor.setSpeed(speed);
-	right_motor.setSpeed(speed);
+	// Serial.print("SP: ");
+	// Serial.print(speed);
+	// Serial.print('\t');
 
-	Serial.print("SP: ");
-	Serial.print(speed);
-	Serial.print('\t');
+	// Serial.print("L: ");
+	// Serial.print(left_motor.getDegreesPerSecond());
+	// Serial.print('\t');
 
-	Serial.print("L: ");
-	Serial.print(left_motor.getDegreesPerSecond());
-	Serial.print('\t');
-
-	Serial.print("E: ");
-	Serial.print(left_motor.getEffortPercent());
-	Serial.print('\n');
-
-	delay(100);
+	// Serial.print("E: ");
+	// Serial.print(left_motor.getEffortPercent());
+	// Serial.print('\n');
 }
 
 void Chassis::followPath(bool turnRightAtIntersection) {

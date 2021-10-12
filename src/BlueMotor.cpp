@@ -86,9 +86,11 @@ void BlueMotor::setEffortCorrected(int effort) {
     int yInt = 77;
 
     if (effort < 0) {
-        setEffort(((int)(slope * -effort) - yInt), true);
-    } else {
+        setEffort(-((int)(slope * effort) - yInt), true);
+    } else if (effort > 0) {
         setEffort(((int)(slope * effort) + yInt), false);
+    } else {
+        setEffort(0, true);
     }
 }
 
@@ -112,50 +114,44 @@ void BlueMotor::setEffort(int effort, bool clockwise) {       //this is a privat
     analogWrite(PWM, value);
 }
 
+int runCount = 0;
 
 // positionIdeal has the same units as the encoder count
 void BlueMotor::setPosition(int positionIdeal) {             //beginning of the PID control for the encoders/arm positions
                                                              //input the desired position to the function for the arm
-    if (prevSetpoint != positionIdeal) { // when going to new position, reset accumulated error
-        errorSum = 0;
-        prevSetpoint = positionIdeal;
-    }
+    runCount++;
+    runCount = runCount % 10;
     
-    int effort = 0;                                  
-   
+    int effort = 0; 
+
     int error = positionIdeal - getPosition();
-
     effort += kp * error; // P
-    effort += ki * errorSum; // I
-    effort += kd * (error - errorThen); // D
 
-    setEffort(effort);
-    
+    setEffortCorrected(effort);
 
-    errorSum += error;
-    errorThen = error;
+    float slope = (255.0 - 77.0) / 255.0; 
+    int yInt = 77;
 
-    Serial.print(errorThen);
-    Serial.print("\t");
-    Serial.print(error);
-    Serial.print("\t");
-    Serial.print(getPosition());
-    Serial.print("\t");
-    Serial.println(effort);
+    int correctedEffort;
+
+    if (effort < 0) {
+        correctedEffort = (int)(slope * effort) - yInt;
+    } else if (effort > 0) {
+        correctedEffort = (int)(slope * effort) + yInt;
+    } else {
+        correctedEffort = 0;
+    }
+
+    float rpm = 169.98 * effort / 255.0;
+    rpm = constrain(rpm, -169.98, 169.98);
+
+    if (runCount == 0)
+        Serial.printf("%d | %d | %d | %d | %.2f | %d | %.1f\n", getPosition(), positionIdeal, effort, correctedEffort, rpm, millis(), 1.2);
 }
 
 void BlueMotor::stopMotor(){                              //stop the motor
     setEffort(0);
 }
-
-
- int BlueMotor::incrementEffort(int effort) {
-     for(int i = 0; i <= 255; i++) {
-         setEffort(i);
-         //Serial.println(effort,  count);
-     }
-     return effort;
- }
 
 
 //moveFor is blocking?  moves to a cerain number of degrees
