@@ -43,21 +43,21 @@ enum KEY_VALUES
     KEY_NINE = 26
 };
 
-enum ROBOT_STATE
+enum ROBOT_STATE              //defining the states in the state machine
 {
 
-    firstp,     //25 degree position of the arm pickup and deposit
-    secondp,    //platform state for deposit and pickup
-    ArriveRoof, //arrive at a roof to pickup a solar pannel
-    ReturnRoof, //return to the roof in order to deposit the solar panel
-    LeaveRoof,  //leave the 45 degree roof in order to deposit the solar panel
-    roofleave,  //leave the 25 degree roof to deposit the solar pannel
+    FirstVisit,     //25 degree position of the arm pickup and deposit
+    SecondVisit,    //platform state for deposit and pickup
+    ArriveRoof,     //arrive at a roof 
+    ReturnRoof,     //return to the roof with the new panel
+    LeaveRoof,      //leave for the platform deposit
+    
 
 };
 
-// Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
-ROBOT_STATE robotState = ArriveRoof;    //got rid of ROBOT_IDLE because not in the ruberic
+ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
 
+//--------------------------------------------------------------------------------------------------------------------------------
 const int STAGING_POS = 0;              //constants for positions of the arm
 const int ROOF_25_PICKUP = -7078;       //+226 because an adjustment had ot be made from the origional measurement
 const int ROOF_25_PLACE = -6346;
@@ -69,7 +69,7 @@ const int GRIPPER_CLOSED = 180;    // deg for servo
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(9600);        //should it be 115200?
 
     chassis.setup();
 
@@ -89,7 +89,7 @@ float distance = 0;
 void loop()
 {
 
-    distance = ultrasoonic.getDistanceCM(); //get the distance from the untrasoonic
+    distance = ultrasoonic.getDistanceCM();   //get the distance from the untrasoonic
     Serial.println(distance);
 
     int key = decoder.getKeyCode();
@@ -98,46 +98,36 @@ void loop()
     { //servo?
         effort++;
     }
-    else if (key == KEY_STOP)
-    { //
+    else if (key == KEY_STOP){ //
         effort += 10;
     }
-    else if (key == KEY_RIGHT)
-    { //blue motor arm down
+    else if (key == KEY_RIGHT) {       //blue motor arm down
         effort += 100;
     }
-    else if (key == KEY_VOL_MINUS)
-    {
+    else if (key == KEY_VOL_MINUS){
         effort--;
     }
-    else if (key == KEY_SETUP)
-    {
+    else if (key == KEY_SETUP){
         effort -= 10;
         //key == KEY_LEFT)
     }
-    else if (key == KEY_LEFT)
-    { //blue motor arm up
+    else if (key == KEY_LEFT){          //blue motor arm up
         effort -= 100;
         //Serial.println(effort);
     }
-    else if (key == KEY_PLAY)
-    { //staging platform button and position
+    else if (key == KEY_PLAY){         //preset staging platform button and position
         setpoint = STAGING_POS;
     }
-    else if (key == KEY_UP)
-    { //25 degree roof button and position for pickup
+    else if (key == KEY_UP){           //preset 25 degree roof button and position for pickup
         setpoint = ROOF_25_PICKUP;
     }
-    else if (key == KEY_ENTER)
-    { //25 degreee roof button and position for placement
+    else if (key == KEY_ENTER{         //preset 25 degreee roof button and position for placement
         setpoint = ROOF_25_PLACE;
     }
-    else if (key == KEY_SEVEN)
-    { //servo gripper
+    else if (key == KEY_SEVEN){        //perset servo gripper open
         gripper.write(GRIPPER_OPEN);
     }
-    else if (key == KEY_NINE)
-    {
+    else if (key == KEY_NINE){         //preset gripper closed
         gripper.write(GRIPPER_CLOSED);
     }
 
@@ -173,14 +163,14 @@ void loop()
     delay(10);
 
     // int key = decoder.getKeyCode();
-
-    switch (robotState)
+//---------------------------------------------------------------------------------------------------------------------------------
+    switch (robotState)        //state of the robot state machine in main()
     {
 
     case ArriveRoof: //arrive following the line at a roof
         if (ultrasoonic.getDistanceCM() <= 30)
         {
-            robotState = firstp; //set to the first position at a certain distance
+            robotState = FirstVisit; //set to the first position at a certain distance
         }
         else
         {
@@ -188,7 +178,7 @@ void loop()
         }                              
 
      
-    case firstp:
+    case FirstVisit:
         gripper.write(GRIPPER_OPEN);            //set the gripper to open
         setpoint = ROOF_25_PLACE;
 
@@ -200,6 +190,7 @@ void loop()
         //set distance to backup a few
 
         robotState = LeaveRoof; //go to the next state in order to turn and leave the roof location
+        break;
 
 
     case LeaveRoof:
@@ -210,18 +201,39 @@ void loop()
         //follow line again
         if (ultrasoonic.getDistanceCM() <= 30)
         { 
-            robotState = secondp;   //go to the staging platform state
+            robotState = SecondVisit;   //go to the staging platform state
         }
         else{
             chassis.followPath(true);    //if it sees an intersection, turn right?
         }
+        break;
 
-    case secondp:
+    case SecondVisit:
            //define this distance better
             setpoint = STAGING_POS;
-            gripper.write(GRIPPER_CLOSED);
+            gripper.write(GRIPPER_OPEN);
             //may want to back up some distance from the block, but ultrasoonic is covered by the gripper
             delay(100); //delay for the new block to be placed on
+            gripper.write(GRIPPER_CLOSED);
+            setpoint = ROOF_25_PICKUP;
+
+            robotState = ReturnRoof;
+            break;
+
+    case ReturnRoof:                                   //return to the roof for the deposit of the new panel
+    if (ultrasoonic.getDistanceCM() <= 30)
+        { 
+            robotState = FirstVisit;   //go to the staging platform state
+        }
+        else{
+            chassis.followPath(false);    //if it sees an intersection, turn left?
+        }
+        break;
+
+
+
+
+        
 
     }
 }
