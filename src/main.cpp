@@ -1,6 +1,7 @@
 #include <RBE1001Lib.h>
 #include <IRdecoder.h>
 #include <ESP32Servo.h>
+#include <ESP32AnalogRead.h>
 
 #include "BlueMotor.h"
 #include "Chassis.h"
@@ -9,13 +10,12 @@
 
 const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
 
-
-
 //global variables and constants
 BlueMotor blueMotor;
 Chassis chassis;
 IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
 Servo gripper;
+ESP32AnalogRead gripperFeedback;
 
 enum KEY_VALUES
 { // Key codes for each button on the IR remote
@@ -60,11 +60,12 @@ enum ROBOT_STATE
 // Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
 ROBOT_STATE robotState = firstp; //should be ROBOT_IDLE, but is changed for lab 4
 
-int effort = 0;
-
 const int STAGING_POS = 0;                   //constants for positions of the arm
 const int ROOF_25_PICKUP = -7078;      //+226 because an adjustment had ot be made from the origional measurement
 const int ROOF_25_PLACE = -6346;
+
+const int GRIPPER_OPEN = 80; // deg for servo
+const int GRIPPER_CLOSED = 180; // deg for servo
 
 void setup()
 {
@@ -76,10 +77,12 @@ void setup()
     blueMotor.reset();
 
     gripper.attach(SERVO_PIN);
+    gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);
 
     decoder.init();
 }
 
+int effort = 0;
 int setpoint = 0;
 
 void loop() { 
@@ -103,27 +106,34 @@ void loop() {
         setpoint = ROOF_25_PICKUP;
     } else if (key == KEY_ENTER) {                        //25 degreee roof button and position for placement
         setpoint = ROOF_25_PLACE;
+    } else if (key == KEY_SEVEN) {
+        gripper.write(GRIPPER_OPEN);
+    } else if (key == KEY_NINE) {
+        gripper.write(GRIPPER_CLOSED);
     }
+
     effort = constrain(effort, -255, 255);
 
-    // blueMotor.setEffortCorrected(effort);
+    blueMotor.setEffortCorrected(effort);
     blueMotor.setPosition(setpoint);
     
-    // float slope = (255.0 - 77.0) / 255.0;
-    // int yInt = 77;
-    // int correctedEffort;
+    float slope = (255.0 - 77.0) / 255.0;
+    int yInt = 77;
+    int correctedEffort;
 
-    // if (effort < 0) {
-    //     correctedEffort = -((int)(slope * -effort) + yInt);
-    // } else {
-    //     correctedEffort = (int)(slope * effort) + yInt;
-    // }
+    if (effort < 0) {
+        correctedEffort = (int)(slope * effort) - yInt;
+    } else if (effort > 0) {
+        correctedEffort = (int)(slope * effort) + yInt;
+    } else {
+        correctedEffort = 0;
+    }
 
-    // float rpm = 169.98 * effort / 255.0;
-    // rpm = constrain(rpm, -169.98, 169.98);
+    float rpm = 169.98 * correctedEffort / 255.0;
+    rpm = constrain(rpm, -169.98, 169.98);
 
-    // Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
-    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());         
+    Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
+    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());   
 
     delay(10);
 

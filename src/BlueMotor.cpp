@@ -146,7 +146,7 @@ void BlueMotor::setPosition(int positionIdeal) {             //beginning of the 
     rpm = constrain(rpm, -169.98, 169.98);
 
     if (runCount == 0)
-        Serial.printf("%d | %d | %d | %d | %.2f | %d | %.1f\n", getPosition(), positionIdeal, effort, correctedEffort, rpm, millis(), 1.2);
+        Serial.printf("%ld | %d | %d | %d | %.2f | %ld | %.1f\n", getPosition(), positionIdeal, effort, correctedEffort, rpm, millis(), 1.2);
 }
 
 void BlueMotor::stopMotor(){                              //stop the motor
