@@ -125,7 +125,12 @@ void BlueMotor::setPosition(int positionIdeal) {             //beginning of the 
     int effort = 0; 
 
     int error = positionIdeal - getPosition();
-    effort += kp * error; // P
+    int errorSum;
+    int errorThen;
+    errorSum += error;    //for the ki, sum of the error
+    errorThen = error;    //for the kd, previous error
+
+    effort += kp * error + (ki * errorSum) + kd*(error - errorThen); // P
 
     setEffortCorrected(effort);
 
@@ -146,12 +151,39 @@ void BlueMotor::setPosition(int positionIdeal) {             //beginning of the 
     rpm = constrain(rpm, -169.98, 169.98);
 
     if (runCount == 0)
-        Serial.printf("%ld | %d | %d | %d | %.2f | %ld | %.1f\n", getPosition(), positionIdeal, effort, correctedEffort, rpm, millis(), 1.2);
+        Serial.printf("%ld | %d | %d | %d | %.2f | %ld | %.1f\n", getPosition(), 
+                      positionIdeal, effort, correctedEffort, rpm, millis(), 1.2);
+   
 }
 
-void BlueMotor::stopMotor(){                              //stop the motor
+
+void BlueMotor::stopMotor(){                              //stop the motor(?)
     setEffort(0);
 }
+
+/*
+void Deadband(){
+    int effort =
+
+    effort = constrain(effort, -255, 255);
+     
+    float slope = (255.0 - 77.0) / 255.0;
+    int yInt = 77;
+    int correctedEffort;
+
+    if (effort < 0) {
+        correctedEffort = (int)(slope * effort) - yInt;
+    } else if (effort > 0) {
+        correctedEffort = (int)(slope * effort) + yInt;
+    } else {
+        correctedEffort = 0;
+    }
+
+    float rpm = 169.98 * correctedEffort / 255.0;
+    rpm = constrain(rpm, -169.98, 169.98);
+
+}
+*/
 
 
 //moveFor is blocking?  moves to a cerain number of degrees

@@ -5,18 +5,19 @@
 
 #include "BlueMotor.h"
 #include "Chassis.h"
-
-//code for RBE 2001 lab4
-
+#include "Rangefinder.h"
+//-------------------------------------------------------------------------------------------------------------------------------
 const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
 
 //global variables and constants
 BlueMotor blueMotor;
 Chassis chassis;
+Rangefinder ultrasoonic; //defined one letter different cuz we were confuzed
 IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
 Servo gripper;
 ESP32AnalogRead gripperFeedback;
 
+//--------------------------------------------------------------------------------------------------------------------------------
 enum KEY_VALUES
 { // Key codes for each button on the IR remote
     KEY_VOL_MINUS = 0,
@@ -44,28 +45,27 @@ enum KEY_VALUES
 
 enum ROBOT_STATE
 {
-    //ROBOT_IDLE,   //robot is waiting for the button press to start it
-    //ROBOT_ACTIVE, //press a button and the robot activates
-    firstp,       //45 degree position of the arm
-    secondp,      //25 degee position of the arm
-    UpLow,         //deposit on the 2 inch platform
-    LowUp,        //retrieve the solar panel from the low platform
-    Arriveroof,   //arrive at a roof to pickup a solar pannel
-    ReturnRoof,   //return to the roof in order to deposit the solar panel
-    LeaveRoof,    //leave the 45 degree roof in order to deposit the solar panel
-    roofleave,    //leave the 25 degree roof to deposit the solar pannel
-    
+
+    firstp,     //25 degree position of the arm pickup and deposit
+    secondp,    //platform state for deposit and pickup
+    ArriveRoof, //arrive at a roof to pickup a solar pannel
+    ReturnRoof, //return to the roof in order to deposit the solar panel
+    LeaveRoof,  //leave the 45 degree roof in order to deposit the solar panel
+    roofleave,  //leave the 25 degree roof to deposit the solar pannel
+
 };
 
 // Declare a variable, robotState, of our new type, ROBOT_STATE. Initialize it to ROBOT_IDLE.
-ROBOT_STATE robotState = firstp; //should be ROBOT_IDLE, but is changed for lab 4
+ROBOT_STATE robotState = ArriveRoof;    //got rid of ROBOT_IDLE because not in the ruberic
 
-const int STAGING_POS = 0;                   //constants for positions of the arm
-const int ROOF_25_PICKUP = -7078;      //+226 because an adjustment had ot be made from the origional measurement
+const int STAGING_POS = 0;              //constants for positions of the arm
+const int ROOF_25_PICKUP = -7078;       //+226 because an adjustment had ot be made from the origional measurement
 const int ROOF_25_PLACE = -6346;
 
-const int GRIPPER_OPEN = 80; // deg for servo
-const int GRIPPER_CLOSED = 180; // deg for servo
+const int GRIPPER_OPEN = 80;       // deg for servo
+const int GRIPPER_CLOSED = 180;    // deg for servo
+
+
 
 void setup()
 {
@@ -75,103 +75,153 @@ void setup()
 
     blueMotor.setup();
     blueMotor.reset();
-
-    gripper.attach(SERVO_PIN);
-    gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);
+    ultrasoonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the untrasonic
+    gripper.attach(SERVO_PIN);                                      //attach the gripper
+    gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);                  //attack the gripper feedback sensor
 
     decoder.init();
 }
 
 int effort = 0;
 int setpoint = 0;
+float distance = 0;
 
-void loop() { 
+void loop()
+{
+
+    distance = ultrasoonic.getDistanceCM(); //get the distance from the untrasoonic
+    Serial.println(distance);
+
     int key = decoder.getKeyCode();
-
-    if (key == KEY_VOL_PLUS) {
+    //Serial.println(key);
+    if (key == KEY_VOL_PLUS)
+    { //servo?
         effort++;
-    } else if (key == KEY_STOP) {
+    }
+    else if (key == KEY_STOP)
+    { //
         effort += 10;
-    } else if (key == KEY_RIGHT) {
+    }
+    else if (key == KEY_RIGHT)
+    { //blue motor arm down
         effort += 100;
-    } else if (key == KEY_VOL_MINUS) {
+    }
+    else if (key == KEY_VOL_MINUS)
+    {
         effort--;
-    } else if (key == KEY_SETUP) {
+    }
+    else if (key == KEY_SETUP)
+    {
         effort -= 10;
-    } else if (key == KEY_LEFT) {
+        //key == KEY_LEFT)
+    }
+    else if (key == KEY_LEFT)
+    { //blue motor arm up
         effort -= 100;
-    } else if (key == KEY_PLAY) {                         //staging platform button and position
+        //Serial.println(effort);
+    }
+    else if (key == KEY_PLAY)
+    { //staging platform button and position
         setpoint = STAGING_POS;
-    } else if (key == KEY_UP) {                           //25 degree roof button and position for pickup
+    }
+    else if (key == KEY_UP)
+    { //25 degree roof button and position for pickup
         setpoint = ROOF_25_PICKUP;
-    } else if (key == KEY_ENTER) {                        //25 degreee roof button and position for placement
+    }
+    else if (key == KEY_ENTER)
+    { //25 degreee roof button and position for placement
         setpoint = ROOF_25_PLACE;
-    } else if (key == KEY_SEVEN) {
+    }
+    else if (key == KEY_SEVEN)
+    { //servo gripper
         gripper.write(GRIPPER_OPEN);
-    } else if (key == KEY_NINE) {
+    }
+    else if (key == KEY_NINE)
+    {
         gripper.write(GRIPPER_CLOSED);
     }
 
     effort = constrain(effort, -255, 255);
 
-    blueMotor.setEffortCorrected(effort);
-    blueMotor.setPosition(setpoint);
-    
-    float slope = (255.0 - 77.0) / 255.0;
+    //(not both at the same time)
+    //blueMotor.setEffortCorrected(effort);               //use the corrected effort in order to place the arm manually
+    blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
+
+    float slope = (255.0 - 77.0) / 255.0; //start of the deadband correction effort
     int yInt = 77;
     int correctedEffort;
 
-    if (effort < 0) {
+    if (effort < 0)
+    {
         correctedEffort = (int)(slope * effort) - yInt;
-    } else if (effort > 0) {
+    }
+    else if (effort > 0)
+    {
         correctedEffort = (int)(slope * effort) + yInt;
-    } else {
+    }
+    else
+    {
         correctedEffort = 0;
     }
 
     float rpm = 169.98 * correctedEffort / 255.0;
     rpm = constrain(rpm, -169.98, 169.98);
 
-    Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
-    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());   
+    //Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
+    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
 
     delay(10);
 
     // int key = decoder.getKeyCode();
 
-    // BlueMotor.setEffort(90);        //2 inch bench
+    switch (robotState)
+    {
 
-    // switch (robotState)
-    // {
-    // case firstp:                   //sets the state to the 45 degree angle
-    //     blueMotor.setPosition(90); //use PID in encoders to put into position specified
-    //     blueMotor.stopMotor();
-    //     break; //break out of the state machine
+    case ArriveRoof: //arrive following the line at a roof
+        if (ultrasoonic.getDistanceCM() <= 30)
+        {
+            robotState = firstp; //set to the first position at a certain distance
+        }
+        else
+        {
+            chassis.followPath(false); //follow the line otherwise, if there is an intersection, turn left
+        }                              
 
-    // case secondp:                  //sets the state to the 25 degree angle
-    //     blueMotor.setPosition(70); //use PID in encoders to put into position specified
-    //     break;                     //break out of the state machine
+     
+    case firstp:
+        gripper.write(GRIPPER_OPEN);            //set the gripper to open
+        setpoint = ROOF_25_PLACE;
 
-    // case UpLow:                      //sets the state to the platform
-    //     blueMotor.setPosition(110);  //use PID in encoders to put into position specified
-    //     break;                       //break out of the state machine
+        delay(10);
+        //adjust distance line  for best pickup drive foward
+        gripper.write(GRIPPER_CLOSED);          //set the gripper to closed
+        setpoint = ROOF_25_PICKUP;
 
-       //case ArriveRoof:                 //arrive following the line at a roof
-           //follow a line 
-           //if a certain distance, stop and adjust to corrrect distance
-           //switch state to fisrtp,
-    
+        //set distance to backup a few
 
-    // }
+        robotState = LeaveRoof; //go to the next state in order to turn and leave the roof location
 
-    // float time = millis();
 
-    // if (time - prevSetTime >= 100)
-    // {
-    //     blueMotor.setEffort(++effort);
-    //     delay(100);
-    //     prevSetTime = time;
-    // }
+    case LeaveRoof:
+        //turn            //(find until the new line is located, then next function takes over)
+        //line.checkNewLine(right);            //determine if the robot is on a new line
+        //follow line
+        //turn (right?) at intersection
+        //follow line again
+        if (ultrasoonic.getDistanceCM() <= 30)
+        { 
+            robotState = secondp;   //go to the staging platform state
+        }
+        else{
+            chassis.followPath(true);    //if it sees an intersection, turn right?
+        }
 
-    // Serial.printf("%ld | %d\n", blueMotor.getPosition(), effort);
+    case secondp:
+           //define this distance better
+            setpoint = STAGING_POS;
+            gripper.write(GRIPPER_CLOSED);
+            //may want to back up some distance from the block, but ultrasoonic is covered by the gripper
+            delay(100); //delay for the new block to be placed on
+
+    }
 }

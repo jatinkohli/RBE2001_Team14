@@ -13,6 +13,7 @@ class BlueMotor {
         void setPosition(int positionIdeal);
         void stopMotor();
         int incrementEffort(int effort);
+        void Deadband();   //set the deadban for the effort
 
         static const int ENCA = 19;
         static const int ENCB = 18;
@@ -26,6 +27,8 @@ class BlueMotor {
 
         // for position PID
         float kp = 1.2;
+        float ki = 0;
+        float kd = 0;
         
         void setEffort(int effort, bool clockwise);
 
