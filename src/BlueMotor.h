@@ -10,10 +10,8 @@ class BlueMotor {
         long getPosition();
         void reset();
         void setup();
-        void setPosition(int positionIdeal);
+        bool setPosition(int positionIdeal);
         void stopMotor();
-        int incrementEffort(int effort);
-        void Deadband();   //set the deadban for the effort
 
         static const int ENCA = 19;
         static const int ENCB = 18;

@@ -14,10 +14,10 @@
 class Chassis {
     public:
         void setup();
-        void moveTo(float distInCm);
-        void moveFor(float speedInCmPerS);
+        bool moveTo(float distInCm);
+        // void moveFor(float speedInCmPerS);
         void followPath(bool turnRightAtIntersection);
-        void turnToLine(bool turnRight);
+        bool turnToLine(bool turnRight);
         void stop();
 
     private:

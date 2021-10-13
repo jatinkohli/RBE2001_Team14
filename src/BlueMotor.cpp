@@ -117,7 +117,7 @@ void BlueMotor::setEffort(int effort, bool clockwise) {       //this is a privat
 int runCount = 0;
 
 // positionIdeal has the same units as the encoder count
-void BlueMotor::setPosition(int positionIdeal) {             //beginning of the PID control for the encoders/arm positions
+bool BlueMotor::setPosition(int positionIdeal) {             //beginning of the PID control for the encoders/arm positions
                                                              //input the desired position to the function for the arm
     runCount++;
     runCount = runCount % 10;
@@ -134,46 +134,10 @@ void BlueMotor::setPosition(int positionIdeal) {             //beginning of the 
     effort = kp * error; //+ (ki * errorSum) + kd*(error - errorThen); // P
 
     setEffortCorrected(effort);
+
+    return abs(error) < 10;
 }
 
-
-void BlueMotor::stopMotor(){                              //stop the motor(?)
+void BlueMotor::stopMotor() {                              //stop the motor(?)
     setEffort(0);
 }
-
-/*
-void Deadband(){
-    int effort =
-
-    effort = constrain(effort, -255, 255);
-     
-    float slope = (255.0 - 77.0) / 255.0;
-    int yInt = 77;
-    int correctedEffort;
-
-    if (effort < 0) {
-        correctedEffort = (int)(slope * effort) - yInt;
-    } else if (effort > 0) {
-        correctedEffort = (int)(slope * effort) + yInt;
-    } else {
-        correctedEffort = 0;
-    }
-
-    float rpm = 169.98 * correctedEffort / 255.0;
-    rpm = constrain(rpm, -169.98, 169.98);
-
-}
-*/
-
-
-//moveFor is blocking?  moves to a cerain number of degrees
-//moveTo is not a blocking function? moves to a position
-//to spin both wheels at the same time ,one moveTo and then one moveFor
-//remember to account for the wheel diameter and the circle diameter in the turns of the robot
-//there is documentation of the lab code in canbavas undder a lecture somewhere
-//you can set a limit to the integral term 
-
-//use the aPID class from the library for the blue motor stuff, Brad Miller said in lab
-//PID_V1 search in libraries tab in platform.io
-//use the one from brett buaeregard
-//then click "add to project"

@@ -20,31 +20,35 @@ void Chassis::setup() {
     Serial.println("started");
 }
 
-void Chassis::moveTo(float distInCm) {
+bool Chassis::moveTo(float distInCm) {
     left_motor.setSpeed(robotSpeed);
     right_motor.setSpeed(robotSpeed);
+
+    return true;
 }
 
-void Chassis::moveFor(float speedInCmPerS) {
-	// Serial.print("SP: ");
-	// Serial.print(speed);
-	// Serial.print('\t');
+// bool Chassis::moveFor(float speedInCmPerS) {
+// 	// Serial.print("SP: ");
+// 	// Serial.print(speed);
+// 	// Serial.print('\t');
 
-	// Serial.print("L: ");
-	// Serial.print(left_motor.getDegreesPerSecond());
-	// Serial.print('\t');
+// 	// Serial.print("L: ");
+// 	// Serial.print(left_motor.getDegreesPerSecond());
+// 	// Serial.print('\t');
 
-	// Serial.print("E: ");
-	// Serial.print(left_motor.getEffortPercent());
-	// Serial.print('\n');
-}
+// 	// Serial.print("E: ");
+// 	// Serial.print(left_motor.getEffortPercent());
+// 	// Serial.print('\n');
+
+//     return true;
+// }
 
 void Chassis::followPath(bool turnRightAtIntersection) {
     line.followLine(robotSpeed, &left_motor, &right_motor);
 }
 
-void Chassis::turnToLine(bool turnRight) {
-    
+bool Chassis::turnToLine(bool turnRight) {
+    return true;
 }
 
 // Emergency Stop
