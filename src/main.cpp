@@ -69,13 +69,13 @@ const int GRIPPER_CLOSED = 180;    // deg for servo
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     chassis.setup();
 
     blueMotor.setup();
     blueMotor.reset();
-    ultrasoonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the untrasonic
+    // ultrasoonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the untrasonic
     gripper.attach(SERVO_PIN);                                      //attach the gripper
     gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);                  //attack the gripper feedback sensor
 
@@ -86,11 +86,12 @@ int effort = 0;
 int setpoint = 0;
 float distance = 0;
 
+bool manualMode = false;
+
 void loop()
 {
-
-    distance = ultrasoonic.getDistanceCM(); //get the distance from the untrasoonic
-    Serial.println(distance);
+    // distance = ultrasoonic.getDistanceCM(); //get the distance from the untrasoonic
+    // Serial.println(distance);
 
     int key = decoder.getKeyCode();
     //Serial.println(key);
@@ -139,13 +140,19 @@ void loop()
     else if (key == KEY_NINE)
     {
         gripper.write(GRIPPER_CLOSED);
+    } else if (key == KEY_FIVE) {
+        manualMode = !manualMode;
+        
+        Serial.printf("ManualMode: %d\n", manualMode);
     }
 
     effort = constrain(effort, -255, 255);
 
     //(not both at the same time)
-    //blueMotor.setEffortCorrected(effort);               //use the corrected effort in order to place the arm manually
-    blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
+    if (manualMode)
+        blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
+    else
+        blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
 
     float slope = (255.0 - 77.0) / 255.0; //start of the deadband correction effort
     int yInt = 77;
@@ -168,7 +175,7 @@ void loop()
     rpm = constrain(rpm, -169.98, 169.98);
 
     //Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
-    // Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
+    Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
 
     delay(10);
 
@@ -177,51 +184,56 @@ void loop()
     switch (robotState)
     {
 
-    case ArriveRoof: //arrive following the line at a roof
-        if (ultrasoonic.getDistanceCM() <= 30)
-        {
-            robotState = firstp; //set to the first position at a certain distance
-        }
-        else
-        {
-            chassis.followPath(false); //follow the line otherwise, if there is an intersection, turn left
-        }                              
+        case ArriveRoof: //arrive following the line at a roof
+            // if (ultrasoonic.getDistanceCM() <= 30)
+            // {
+            //     robotState = firstp; //set to the first position at a certain distance
+            // }
+            // else
+            // {
+            //     chassis.followPath(false); //follow the line otherwise, if there is an intersection, turn left
+            // }  
+            break;
+        
+        case firstp:
+            gripper.write(GRIPPER_OPEN);            //set the gripper to open
+            setpoint = ROOF_25_PLACE;
 
-     
-    case firstp:
-        gripper.write(GRIPPER_OPEN);            //set the gripper to open
-        setpoint = ROOF_25_PLACE;
+            delay(10);
+            //adjust distance line  for best pickup drive foward
+            gripper.write(GRIPPER_CLOSED);          //set the gripper to closed
+            setpoint = ROOF_25_PICKUP;
 
-        delay(10);
-        //adjust distance line  for best pickup drive foward
-        gripper.write(GRIPPER_CLOSED);          //set the gripper to closed
-        setpoint = ROOF_25_PICKUP;
+            //set distance to backup a few
 
-        //set distance to backup a few
+            robotState = LeaveRoof; //go to the next state in order to turn and leave the roof location
 
-        robotState = LeaveRoof; //go to the next state in order to turn and leave the roof location
+            break;
 
 
-    case LeaveRoof:
-        //turn            //(find until the new line is located, then next function takes over)
-        //line.checkNewLine(right);            //determine if the robot is on a new line
-        //follow line
-        //turn (right?) at intersection
-        //follow line again
-        if (ultrasoonic.getDistanceCM() <= 30)
-        { 
-            robotState = secondp;   //go to the staging platform state
-        }
-        else{
-            chassis.followPath(true);    //if it sees an intersection, turn right?
-        }
+        case LeaveRoof:
+            //turn            //(find until the new line is located, then next function takes over)
+            //line.checkNewLine(right);            //determine if the robot is on a new line
+            //follow line
+            //turn (right?) at intersection
+            //follow line again
+            if (ultrasoonic.getDistanceCM() <= 30)
+            { 
+                robotState = secondp;   //go to the staging platform state
+            }
+            else{
+                chassis.followPath(true);    //if it sees an intersection, turn right?
+            }
 
-    case secondp:
-           //define this distance better
+            break;
+
+        case secondp:
+            //define this distance better
             setpoint = STAGING_POS;
             gripper.write(GRIPPER_CLOSED);
             //may want to back up some distance from the block, but ultrasoonic is covered by the gripper
             delay(100); //delay for the new block to be placed on
 
-    }
+            break;
+        }
 }

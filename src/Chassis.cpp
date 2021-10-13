@@ -1,18 +1,15 @@
 #include <Chassis.h>
 
-// Class for the Chassis and everything on it (Drivetrain, Ultrasonic)
+// Class for the Chassis and everything on it (Drivetrain)
 const uint8_t BOOT_BTN_PIN = 0;
 
 float robotSpeed = 180; // Speed of the robot in ticks/s
 
 Button bootButton(BOOT_BTN_PIN); // Create a button object for the built-in button on the ESP32
-Rangefinder ultrasonic;
 Line line;
 
 // Initializes Chassis fields
 void Chassis::setup() {
-    //ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO);
-
     pinMode(LEFT_LINE_SENSE, INPUT);
     pinMode(RIGHT_LINE_SENSE, INPUT);
 
