@@ -6,20 +6,19 @@
 #include "BlueMotor.h"
 #include "Chassis.h"
 #include "Rangefinder.h"
-//-------------------------------------------------------------------------------------------------------------------------------
+
 const uint8_t IR_DETECTOR_PIN = 15; // define the pin for the IR receiver
 
 //global variables and constants
 BlueMotor blueMotor;
 Chassis chassis;
-Rangefinder ultrasoonic; //defined one letter different cuz we were confuzed
+Rangefinder ultrasonic;
 IRDecoder decoder(IR_DETECTOR_PIN); // create an IRDecoder object
 Servo gripper;
 ESP32AnalogRead gripperFeedback;
 
-//--------------------------------------------------------------------------------------------------------------------------------
-enum KEY_VALUES
-{ // Key codes for each button on the IR remote
+
+enum KEY_VALUES { // Key codes for each button on the IR remote
     KEY_VOL_MINUS = 0,
     KEY_PLAY = 1,
     KEY_VOL_PLUS = 2,
@@ -43,8 +42,7 @@ enum KEY_VALUES
     KEY_NINE = 26
 };
 
-enum ROBOT_STATE
-{
+enum ROBOT_STATE {
 
     firstp,     //25 degree position of the arm pickup and deposit
     secondp,    //platform state for deposit and pickup
@@ -65,17 +63,15 @@ const int ROOF_25_PLACE = -6346;
 const int GRIPPER_OPEN = 80;       // deg for servo
 const int GRIPPER_CLOSED = 180;    // deg for servo
 
-
-
-void setup()
-{
+void setup() {
     Serial.begin(115200);
 
     chassis.setup();
 
     blueMotor.setup();
     blueMotor.reset();
-    // ultrasoonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the untrasonic
+    ultrasonic.attach(21, 14); //attach the untrasonic
+    // ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the untrasonic
     gripper.attach(SERVO_PIN);                                      //attach the gripper
     gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);                  //attack the gripper feedback sensor
 
@@ -90,8 +86,8 @@ bool manualMode = false;
 
 void loop()
 {
-    // distance = ultrasoonic.getDistanceCM(); //get the distance from the untrasoonic
-    // Serial.println(distance);
+    distance = ultrasonic.getDistanceCM(); //get the distance from the untrasoonic
+    Serial.println(distance);
 
     int key = decoder.getKeyCode();
     //Serial.println(key);
@@ -154,28 +150,7 @@ void loop()
     else
         blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
 
-    float slope = (255.0 - 77.0) / 255.0; //start of the deadband correction effort
-    int yInt = 77;
-    int correctedEffort;
-
-    if (effort < 0)
-    {
-        correctedEffort = (int)(slope * effort) - yInt;
-    }
-    else if (effort > 0)
-    {
-        correctedEffort = (int)(slope * effort) + yInt;
-    }
-    else
-    {
-        correctedEffort = 0;
-    }
-
-    float rpm = 169.98 * correctedEffort / 255.0;
-    rpm = constrain(rpm, -169.98, 169.98);
-
-    //Serial.printf("%ld | %d | %d | %f\n", millis(), effort, correctedEffort, rpm);
-    Serial.printf("%d | %ld\n", effort, blueMotor.getPosition());
+    // Serial.printf("ultra dist: %.1f | %d | %ld\n", distance, effort, blueMotor.getPosition());
 
     delay(10);
 
@@ -217,7 +192,7 @@ void loop()
             //follow line
             //turn (right?) at intersection
             //follow line again
-            if (ultrasoonic.getDistanceCM() <= 30)
+            if (ultrasonic.getDistanceCM() <= 30)
             { 
                 robotState = secondp;   //go to the staging platform state
             }

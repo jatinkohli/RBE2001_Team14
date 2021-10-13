@@ -20,7 +20,7 @@ class BlueMotor {
 
     private:
         const int PWM = 5;
-        const int AIN2 = 25; //changed from 27 because 27 was connected to the left drive motor
+        const int AIN2 = 22; //changed from 27 because 27 was connected to the left drive motor
         const int AIN1 = 23;
 
         const int MIN_EFFORT = 77; // minimum effort for fourbar arm to start moving.
