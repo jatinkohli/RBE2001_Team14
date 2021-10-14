@@ -39,6 +39,7 @@ void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_
 
 
 bool Line::checkForIntersection() {                 //check for intersection
+    
     static int leftPrev = 0;
     static int rightPrev = 0;
 
@@ -48,6 +49,8 @@ bool Line::checkForIntersection() {                 //check for intersection
         //read sensors
         int leftReading = analogRead(LEFT_LINE_SENSE);      //pin attach
         int rightReading = analogRead(RIGHT_LINE_SENSE);    //pin attach
+
+        //int error = leftReading- rightReading;              //error for turning on an intersection
             
         //Check left sensor
         if(leftReading >= threshold && leftPrev > threshold) {
@@ -58,8 +61,8 @@ bool Line::checkForIntersection() {                 //check for intersection
             return leftPrev < threshold && leftReading >= threshold; 
         }
 
-        rightPrev = rightReading;
-        leftPrev = leftReading;
+        rightPrev = rightReading;       //previous reading from each line sensor
+        leftPrev = leftReading;         //previous reading from each line sensor
     }
 
     return false;

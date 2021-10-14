@@ -89,7 +89,7 @@ void setup() {
     effort = 0;
     setpoint = 0;
 
-    manualMode = true;
+    manualMode = false;
 }
 
 float distance = 0;
@@ -115,85 +115,80 @@ bool paused = false;
 void loop() {
     distance = ultrasonic.getDistanceCM(); //get the distance from the ultrasonic
 
-    int key = decoder.getKeyCode();
-    // if (key == KEY_VOL_PLUS)
-    // { //servo?
-    //     effort++;
-    // }
-    // else if (key == KEY_TWO){     //estop
-    //     paused = !paused;
+    int key = decoder.getKeyCode(true);
+    if (key == KEY_VOL_PLUS)
+    { //servo?
+        effort++;
+    }
+    else if (key == KEY_TWO){     //estop
+        paused = !paused;
 
-    //     if (paused) {
-    //         prevSetpoint = setpoint;
-    //         setpoint = blueMotor.getPosition();
-    //         chassis.stop();
-    //     } else {
-    //         setpoint = prevSetpoint;
-    //         prevSetpoint = setpoint;
-    //     }
+        if (paused) {
+            prevSetpoint = setpoint;
+            setpoint = blueMotor.getPosition();
+            chassis.stop();
+        } else {
+            setpoint = prevSetpoint;
+            prevSetpoint = setpoint;
+        }
+    }
+    else if (key == KEY_STOP){ //
+        effort += 10;
+    }
+    else if (key == KEY_RIGHT) {       //blue motor arm down
+        effort += 100;
+    }
+    else if (key == KEY_VOL_MINUS){
+        effort--;
+    }
+    // else if (key == KEY_RETURN){
+    //     chassis.followPath(true);
+    // }else if (key == KEY_ZERO){
+    //     chassis.followPath(false);
     // }
-    // else if (key == KEY_STOP){ //
-    //     effort += 10;
-    // }
-    // else if (key == KEY_RIGHT) {       //blue motor arm down
-    //     effort += 100;
-    // }
-    // else if (key == KEY_VOL_MINUS){
-    //     effort--;
-    // }
-    // // else if (key == KEY_RETURN){
-    // //     chassis.followPath(true);
-    // // }else if (key == KEY_ZERO){
-    // //     chassis.followPath(false);
-    // // }
-    // else if (key == KEY_SETUP){
-    //     effort -= 10;
-    //     //key == KEY_LEFT)
-    // }
-    // else if (key == KEY_LEFT){          //blue motor arm up
-    //     effort -= 100;
-    //     //Serial.println(effort);
-    // }
-    // else if (key == KEY_PLAY){         //preset staging platform button and position
-    //     setpoint = STAGING_POS;
-    // }
-    // else if (key == KEY_UP){           //preset 25 degree roof button and position for pickup
-    //     setpoint = ROOF_25_PICKUP;
-    // }
-    // else if (key == KEY_ENTER){         //preset 25 degreee roof button and position for placement
-    //     setpoint = ROOF_25_PLACE;
-    // }
-    // else if (key == KEY_DOWN){         //preset staging platform button and position
-    //     setpoint = ROOF_45_PLACE;
-    // }
-    // else if (key == KEY_SEVEN){        //perset servo gripper open
-    //     gripper.write(GRIPPER_OPEN);
-    // }
-    // else if (key == KEY_NINE){         //preset gripper closed
-    //     gripper.write(GRIPPER_CLOSED);
-    // } else if (key == KEY_FIVE) {
-    //     manualMode = !manualMode;
+    else if (key == KEY_SETUP){
+        effort -= 10;
+        //key == KEY_LEFT)
+    }
+    else if (key == KEY_LEFT){          //blue motor arm up
+        effort -= 100;
+        //Serial.println(effort);
+    }
+    else if (key == KEY_PLAY){         //preset staging platform button and position
+        setpoint = STAGING_POS;
+    }
+    else if (key == KEY_UP){           //preset 25 degree roof button and position for pickup
+        setpoint = ROOF_25_PICKUP;
+    }
+    else if (key == KEY_ENTER){         //preset 25 degreee roof button and position for placement
+        setpoint = ROOF_25_PLACE;
+    }
+    else if (key == KEY_DOWN){         //preset staging platform button and position
+        setpoint = ROOF_45_PLACE;
+    }
+    else if (key == KEY_SEVEN){        //perset servo gripper open
+        gripper.write(GRIPPER_OPEN);
+    }
+    else if (key == KEY_NINE){         //preset gripper closed
+        gripper.write(GRIPPER_CLOSED);
+    } else if (key == KEY_FIVE) {
+        manualMode = !manualMode;
         
-    //     Serial.printf("ManualMode: %d\n", manualMode);
-    // }
+        Serial.printf("ManualMode: %d\n", manualMode);
+    }
 
-    // effort = constrain(effort, -255, 255);
+    effort = constrain(effort, -255, 255);
 
-    // //(not both at the same time)
-    // if (manualMode)
-    //     blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
-    // else
-    //     blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
-
-    // Serial.printf("ultra dist: %.1f | %d | %ld\n", distance, effort, blueMotor.getPosition());
-
-    delay(10);
-//---------------------------------------------------------------------------------------------------------------------------------
+    //(not both at the same time)
+    if (manualMode)
+        blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
+    else
+        blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
     
     if (key != -1)
         Serial.println(key);
-
-    Serial.printf("%ld | %d | %d | %.1f\n", blueMotor.getPosition(), effort, setpoint, distance);
+    else
+        Serial.printf("%ld | %d | %d | %.1f\n", blueMotor.getPosition(), effort, setpoint, distance);
 
     // switch (robotState)        //state of the robot state machine in main()
     // {
@@ -300,6 +295,8 @@ void loop() {
 
             
     //     }
+
+    delay(10); // Run everything (state machine, PID loops, etc.) at 100 Hz
 }
 
 
