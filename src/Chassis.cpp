@@ -19,8 +19,8 @@ void Chassis::setup() {
 }
 
 bool Chassis::moveTo(float distInCm) {
-    left_motor.setSpeed(robotSpeed);
-    right_motor.setSpeed(robotSpeed);
+    // left_motor.setSpeed(robotSpeed);
+    // right_motor.setSpeed(robotSpeed);
 
     return true;
 }
@@ -28,6 +28,11 @@ bool Chassis::moveTo(float distInCm) {
 void Chassis::setSpeed(float speed) {
     left_motor.setSpeed(speed);
     right_motor.setSpeed(speed);
+}
+
+void Chassis::turn(float speed, bool right) {
+    left_motor.setSpeed(right ? speed : -speed);
+    right_motor.setSpeed(right ? -speed : speed);
 }
 
 // bool Chassis::moveFor(float speedInCmPerS) {
@@ -46,15 +51,10 @@ void Chassis::setSpeed(float speed) {
 //     return true;
 // }
 
-int pathState = 0; // 0 for line following, 1 for turning at intersection
-long startTime = 0; // ms
-const long MAX_TURN_TIME = 1000; // ms
-
 void Chassis::followPath(bool turnRightAtIntersection) {
-    
     switch(pathState) {
         case 0:
-            line.followLine(robotSpeed, &left_motor, &right_motor);
+            line.followLine(robotSpeed / 1.5, &left_motor, &right_motor);
 
             if(line.checkForIntersection()) {
                 stop();

@@ -43,33 +43,31 @@ enum KEY_VALUES { // Key codes for each button on the IR remote
 };
 
 enum ROBOT_STATE {
-
+    ArriveRoof,     //arrive at a roof 
     FirstVisit,     //25 degree position of the arm pickup and deposit
     SecondVisit,    //platform state for deposit and pickup
-    ArriveRoof,     //arrive at a roof 
     ReturnRoof,     //return to the roof with the new panel
     LeaveRoof,      //leave for the platform deposit
-    GoToStaging
-    
-    
-
+    ReplaceCollector,
+    SwitchSides
 };
 
-//ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
+ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
 
 //--------------------------------------------------------------------------------------------------------------------------------
 const int STAGING_POS = 500; //636;              //constants for positions of the arm
-const int ROOF_25_PICKUP = 6122;       //+226 because an adjustment had ot be made from the origional measurement
-const int ROOF_25_PLACE = 7946; //7746;
-const int ROOF_45_PICKUP = 6122;       //+226 because an adjustment had ot be made from the origional measurement
+const int ROOF_PICKUP = 6122;
+const int ROOF_25_PLACE = 7840; //7946;
 const int ROOF_45_PLACE = 3734; //3934;
 
 // cm for the ultrasonic to be from the object
-const float STAGING_DIST = 6.0;
-const float ROOF_45_PLACEDIST = 10.3;
-const float ROOF_45_PICKUPDIST = 12.3;
-const float ROOF_25_PLACEDIST = 7.9;
-const float ROOF_25_PICKUPDIST = 6.1;
+const float OFFSET = 0.68; // offset to account for stopping time
+
+const float STAGING_DIST = 5.6 + OFFSET;
+const float ROOF_45_PLACE_DIST = 10.3 + OFFSET;
+const float ROOF_45_PICKUP_DIST = 12.3 + OFFSET;
+const float ROOF_25_PLACE_DIST = 7.0 + OFFSET;
+const float ROOF_25_PICKUP_DIST = 5.5 + OFFSET;
 
 const int GRIPPER_OPEN = 80;       // deg for servo
 const int GRIPPER_CLOSED = 180;    // deg for servo
@@ -108,30 +106,236 @@ void setup() {
 float distance = 0;
 float oldDistance = 0;
 
-float getDistance() {           //corrects the random errors from the untrasonic sensor
-    oldDistance = distance;
-    distance = ultrasonic.getDistanceCM();
-    if(oldDistance == 0) {
-        oldDistance = distance;
-    }
-    if(abs(distance - oldDistance) >= 4){
-        distance = oldDistance;
-        Serial.println("filtered bad reading");
-    }
-    return distance;
-}
+// float getDistance() {           //corrects the random errors from the untrasonic sensor
+//     oldDistance = distance;
+//     distance = ultrasonic.getDistanceCM();
+//     if(oldDistance == 0) {
+//         oldDistance = distance;
+//     }
+//     if(abs(distance - oldDistance) >= 4){
+//         distance = oldDistance;
+//         // Serial.println("filtered bad reading");
+//     }
+//     return distance;
+// }
 
 bool receivedKeyPress = false;
 int prevSetpoint = setpoint;
 bool paused = false;
 
+bool on45Side = false;
+
+int closeEnoughCount = 0;
+int startTime = 0;
+
+int numConfirmations = 0;
+bool hasNewPlate = false;
+
 void loop() {
-    distance = ultrasonic.getDistanceCM(); //get the distance from the ultrasonic
+    // distance = ultrasonic.getDistanceCM(); //get the distance from the ultrasonic
 
     int key = decoder.getKeyCode();
-    if (key == KEY_VOL_PLUS) { //servo?
-        effort++;
-    } else if (key == KEY_TWO) {     //estop
+        
+    //     Serial.printf("ManualMode: %d\n", manualMode);
+
+    // effort = constrain(effort, -255, 255);
+
+    // //(not both at the same time)
+    // if (manualMode)
+    //     blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
+    // else
+    //     blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
+
+    // if (lineFollowing) {
+    //     if(getDistance() <= STAGING_DIST) {            
+    //         chassis.stop();
+    //         Serial.println(":)");
+    //     } else {
+    //         chassis.followPath(true);
+    //     }
+    // }
+    // else
+    //     chassis.stop();
+    
+    // if (key != -1)
+    //     Serial.println(key);
+    // else
+    //     Serial.printf("%ld | %d | %d | %.1f \ %d\n", blueMotor.getPosition(), effort, setpoint, distance, manualMode);
+
+    switch (robotState)        //state of the robot state machine in main()
+    {
+        case ArriveRoof: //arrive following the line at a roof
+
+            if (receivedKeyPress) {
+                blueMotor.setPosition((on45Side ? ROOF_45_PLACE : ROOF_25_PLACE));
+
+                chassis.followPath(on45Side); //follow the line otherwise, if there is an intersection, turn left
+                gripper.write(GRIPPER_OPEN);
+
+                float dist = ultrasonic.getDistanceCM();
+                Serial.println(dist);
+
+                if (dist <= (on45Side ? ROOF_45_PICKUP_DIST : ROOF_25_PICKUP_DIST))  //45 grabbing position a little short
+                    closeEnoughCount++;
+                else
+                    closeEnoughCount = 0;
+
+                if (closeEnoughCount >= 5) {
+                    robotState = FirstVisit; //set to the first position at a certain distance
+                    receivedKeyPress = false;
+                    closeEnoughCount = 0;
+
+                    Serial.printf("Now in FirstVisit\n");
+                    chassis.stop();
+                }
+            } else {
+                receivedKeyPress = (key == KEY_LEFT || key == KEY_RIGHT);
+                on45Side = key == KEY_RIGHT;
+            }
+            
+            break;
+        
+        case FirstVisit:
+            if (receivedKeyPress) {
+                if (millis() - startTime >= 4100) {           //time might be too short because of battery, 45 eats itself
+                    chassis.stop();                           //may or may not stop in 45, even with PLA
+                    
+                    receivedKeyPress = false;
+
+                    startTime = millis();
+                    robotState = LeaveRoof;
+                } else if (millis() - startTime >= 1200) {
+                    chassis.setSpeed(-chassis.robotSpeed);
+                }
+
+                blueMotor.setPosition(ROOF_PICKUP);
+                Serial.println(blueMotor.getPosition());
+            }
+
+            if (key == KEY_ENTER) {                //this will always happen first because it has an important variable in it
+                gripper.write(GRIPPER_CLOSED);
+
+                startTime = millis();              //start the time count for driving backwards
+                receivedKeyPress = true;           //set key press to false so that the ca\hassis can stop and leaeve the roof
+            }
+
+            break;
+
+        case LeaveRoof:
+            if (millis() - startTime >= 4600) {
+                chassis.followPath(!on45Side);
+                float dist = ultrasonic.getDistanceCM();
+
+                if (dist <= STAGING_DIST)
+                    closeEnoughCount++;
+                else
+                    closeEnoughCount = 0;
+
+                if (closeEnoughCount >= 5) {
+                    robotState = ReplaceCollector; //set to the first position at a certain distance
+                    closeEnoughCount = 0;
+                    numConfirmations = 0;
+                    hasNewPlate = false;
+
+                    chassis.stop();
+                    Serial.printf("Now in ReplaceCollector\n");
+
+                    startTime = millis();
+                }
+            } else {
+                chassis.turn(chassis.robotSpeed, true);
+            }
+
+            break;
+
+        case ReplaceCollector:
+            if (millis() - startTime < 2000) {
+                blueMotor.setPosition(STAGING_POS);
+            } else if (key == KEY_ENTER) {
+                numConfirmations++;
+
+                if (numConfirmations == 1) {
+                    gripper.write(GRIPPER_OPEN);
+                } else if (numConfirmations == 2) {
+                    gripper.write(GRIPPER_CLOSED);
+                    
+                    hasNewPlate = true;
+                    startTime = millis();
+                }
+            } else if (hasNewPlate) {
+                if (millis() - startTime >= 14500) {
+                    chassis.stop();
+                    hasNewPlate = false;
+                    robotState = ReturnRoof;
+                } else if (millis() - startTime >= 12000) {
+                    blueMotor.setPosition(ROOF_PICKUP);
+                    chassis.turn(chassis.robotSpeed * 1.5, false);
+                } else {
+                    blueMotor.setPosition(ROOF_PICKUP);
+                    chassis.stop();
+                }
+            }
+
+            break;
+
+        case SecondVisit:                   //starts the state where the panel is dropped off at the h
+            if (millis() - startTime >= 3000) {
+                if (receivedKeyPress) {
+                    if (millis() - startTime >= 1900) {          //time running until the end of the state
+                        chassis.stop();
+                        
+                        receivedKeyPress = false;
+
+                        startTime = millis();
+                        robotState = SwitchSides;
+                    }
+
+                    chassis.setSpeed(-chassis.robotSpeed);
+                }
+
+                if (key == KEY_ENTER) {                //this will always happen first because it has an important variable in it
+                    gripper.write(GRIPPER_OPEN);
+
+                    startTime = millis();              //start the time count for driving backwards
+                    receivedKeyPress = true;           //set key press to false so that the ca\hassis can stop and leaeve the roof
+                }
+            } else {
+                blueMotor.setPosition((on45Side ? ROOF_45_PLACE : ROOF_25_PLACE));
+            }
+
+            break;
+
+        case SwitchSides:
+            chassis.stop();
+            break;
+
+        case ReturnRoof:                                   //return to the roof for the deposit of the new panel
+            chassis.followPath(on45Side); //follow the line otherwise, if there is an intersection, turn left
+            gripper.write(GRIPPER_CLOSED);
+
+            float dist = ultrasonic.getDistanceCM();
+            Serial.println(dist);
+
+            if (dist <= (on45Side ? ROOF_45_PLACE_DIST : ROOF_25_PLACE_DIST))
+                closeEnoughCount++;
+            else
+                closeEnoughCount = 0;
+
+            if (closeEnoughCount >= 5) {
+                robotState = SecondVisit; //set to the first position at a certain distance
+                closeEnoughCount = 0;
+
+                startTime = millis();
+                receivedKeyPress = false;
+
+                Serial.printf("Now in SecondVisit\n");
+                chassis.stop();
+            }
+
+            break;
+    }
+
+    if (key == KEY_TWO) {     //estop
         paused = !paused;
 
         Serial.println("EMERGENCY STOP");
@@ -149,175 +353,48 @@ void loop() {
 
             lineFollowing = wasLineFollowing;
         }
-    }
-    else if (key == KEY_STOP) { //
-        effort += 10;
-    }
-    else if (key == KEY_RIGHT) {       //blue motor arm down
-        effort += 100;
-    }
-    else if (key == KEY_VOL_MINUS){
-        effort--;
-    }
-    else if (key == KEY_RETURN){
-        lineFollowing = true;
-    }else if (key == KEY_ZERO){
-        lineFollowing = false;
-    }
-    else if (key == KEY_SETUP){
-        effort -= 10;
-    }
-    else if (key == KEY_LEFT){         //blue motor arm up
-        effort -= 100;
-    }
-    else if (key == KEY_PLAY){         //preset staging platform button and position
-        setpoint = STAGING_POS;
-    }
-    else if (key == KEY_UP){           //preset 25 degree roof button and position for pickup
-        setpoint = ROOF_25_PICKUP;
-    }
-    else if (key == KEY_ENTER){        //preset 25 degreee roof button and position for placement
-        setpoint = ROOF_25_PLACE;
-    }
-    else if (key == KEY_DOWN){         //preset staging platform button and position
-        setpoint = ROOF_45_PLACE;
-    }
-    else if (key == KEY_SEVEN){        //perset servo gripper open
-        gripper.write(GRIPPER_OPEN);
-    }
-    else if (key == KEY_NINE){         //preset gripper closed
-        gripper.write(GRIPPER_CLOSED);
-    } else if (key == KEY_FIVE) {              //take the robot out of manual mode
-        manualMode = !manualMode;
-        
-        Serial.printf("ManualMode: %d\n", manualMode);
-    } else if (key == KEY_NINE){       //test the line following code
-        chassis.followPath(true);      //turn right at an intersection
-    }
-
-    effort = constrain(effort, -255, 255);
-
-    //(not both at the same time)
-    if (manualMode)
-        blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
-    else
-        blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
-
-    if (lineFollowing)
-        chassis.followPath(true);
-    else
-        chassis.stop();
-    
-    // if (key != -1)
-    //     Serial.println(key);
-    // else
-    //     Serial.printf("%ld | %d | %d | %.1f \ %d\n", blueMotor.getPosition(), effort, setpoint, distance, manualMode);
-
-    // switch (robotState)        //state of the robot state machine in main()
-    // {
-    //     case ArriveRoof: //arrive following the line at a roof
-
-    //         // if (receivedKeyPress) {
-    //         //     //chassis.followPath(false); //follow the line otherwise, if there is an intersection, turn left
-
-    //         //     Serial.println(getDistance());
-
-    //         //     if (getDistance() <= 15) {
-    //         //         robotState = FirstVisit; //set to the first position at a certain distance
-    //         //         receivedKeyPress = false;
-    //         //         Serial.println("next state");
-    //         //     }
-    //         // } else {
-    //         //     receivedKeyPress = (key == KEY_LEFT || key == KEY_RIGHT);
-    //         // }
-            
-    //         break;
-        
-    //     case FirstVisit:
-    //         if (blueMotor.setPosition(ROOF_25_PLACE)) {
-                
-    //             gripper.write(GRIPPER_OPEN);            //set the gripper to open
-
-    //             if (getDistance() <= 7.0) {
-    //                 // chassis.followPath(true);
-    //             } else {
-    //                 //adjust distance line  for best pickup drive foward
-    //                 gripper.write(GRIPPER_CLOSED);          //set the gripper to closed
-
-    //                 if (key == KEY_ENTER) {
-    //                     robotState = LeaveRoof;
-    //                 }
-    //             }
-    //         }
-
-    //         break;
-
-    //     case LeaveRoof:
-    //         if (blueMotor.setPosition(ROOF_25_PICKUP)) {
-    //             if (chassis.moveTo(-5)) {
-    //                 robotState = GoToStaging;
-    //             }
-    //         }
-
-    //         break;
-
-    //     case GoToStaging:
-
-    //         Serial.println("GoToStaging");
-    //         delay(1000000);
-
-    //         if (chassis.turnToLine(true)) {
-
-    //         }
-
-    //         //turn            //(find until the new line is located, then next function takes over)
-    //         //line.checkNewLine(right);            //determine if the robot is on a new line
-    //         //follow line
-    //         //turn (right?) at intersection
-    //         //follow line again
-    //         if (ultrasonic.getDistanceCM() <= 15)
-    //         { 
-    //             robotState = SecondVisit;   //go to the staging platform state
-    //         }
-    //         else{
-    //             chassis.followPath(true);    //if it sees an intersection, turn right?
-    //         }
-
-    //         robotState = SecondVisit;
-
-    //         break;
-
-    //     case SecondVisit:
-    //         //define this distance better
-    //         setpoint = STAGING_POS;
-    //         gripper.write(GRIPPER_OPEN);
-    //         //may want to back up some distance from the block, but ultrasoonic is covered by the gripper
-    //         delay(100); //delay for the new block to be placed on
-    //         gripper.write(GRIPPER_CLOSED);
-    //         setpoint = ROOF_25_PICKUP;
-
-    //         robotState = ReturnRoof;
-    //         break;
-
-    // case ReturnRoof:                                   //return to the roof for the deposit of the new panel
-    // if (ultrasonic.getDistanceCM() <= 15)
-    //     { 
-    //         robotState = FirstVisit;   //go to the staging platform state
-    //     }
-    //     else{
-    //         chassis.followPath(false);    //if it sees an intersection, turn left?
-    //     }
-    //     break;
-
-    
-
-
-
-
-        
-
-            
-    //     }
+    } 
+    // else if (key == KEY_VOL_PLUS) { //servo?
+    //     effort++;
+    // } else if (key == KEY_STOP) { //
+    //     effort += 10;
+    // }
+    // else if (key == KEY_RIGHT) {       //blue motor arm down
+    //     effort += 100;
+    // }
+    // else if (key == KEY_VOL_MINUS) {
+    //     effort--;
+    // }
+    // else if (key == KEY_RETURN) {
+    //     lineFollowing = true;
+    // }else if (key == KEY_ZERO) {
+    //     lineFollowing = false;
+    // }
+    // else if (key == KEY_SETUP) {
+    //     effort -= 10;
+    // }
+    // else if (key == KEY_LEFT) {         //blue motor arm up
+    //     effort -= 100;
+    // }
+    // else if (key == KEY_PLAY) {         //preset staging platform button and position
+    //     setpoint = STAGING_POS;
+    // }
+    // else if (key == KEY_UP) {           //preset 25 degree roof button and position for pickup
+    //     setpoint = ROOF_25_PICKUP;
+    // }
+    // else if (key == KEY_ENTER) {        //preset 25 degreee roof button and position for placement
+    //     setpoint = ROOF_25_PLACE;
+    // }
+    // else if (key == KEY_DOWN) {         //preset staging platform button and position
+    //     setpoint = ROOF_45_PLACE;
+    // }
+    // else if (key == KEY_SEVEN) {        //perset servo gripper open
+    //     gripper.write(GRIPPER_OPEN);
+    // }
+    // else if (key == KEY_NINE) {         //preset gripper closed
+    //     gripper.write(GRIPPER_CLOSED);
+    // } else if (key == KEY_FIVE) {              //take the robot out of manual mode
+    //     manualMode = !manualMode;
 
     delay(10); // Run everything (state machine, PID loops, etc.) at 100 Hz
 }

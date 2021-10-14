@@ -13,16 +13,16 @@
 
 class Chassis {
     public:
-        float robotSpeed = 100;//180; // Speed of the robot in ticks/s
+        float robotSpeed = 80; // Speed of the robot in ticks/s
         
         void setup();
         bool moveTo(float distInCm);
         void setSpeed(float speed);
+        void turn(float speed, bool right);
         // void moveFor(float speedInCmPerS);
         void followPath(bool turnRightAtIntersection);
         bool turnToLine(bool turnRight);
         void stop();
-        
 
     private:
         const float WHEEL_DIAMETER = 2.75; // Wheel diameter in inches
@@ -31,4 +31,8 @@ class Chassis {
 
         LeftMotor left_motor;
         RightMotor right_motor;
+
+        int pathState = 0; // 0 for line following, 1 for turning at intersection
+        long startTime = 0; // ms
+        const long MAX_TURN_TIME = 1000; // ms
 };
