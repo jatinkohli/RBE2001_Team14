@@ -187,7 +187,7 @@ void loop() {
     }
     else if (key == KEY_NINE){         //preset gripper closed
         gripper.write(GRIPPER_CLOSED);
-    } else if (key == KEY_FIVE) {
+    } else if (key == KEY_FIVE) {              //take the robot out of manual mode
         manualMode = !manualMode;
         
         Serial.printf("ManualMode: %d\n", manualMode);

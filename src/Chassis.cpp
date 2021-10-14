@@ -46,31 +46,34 @@ void Chassis::setSpeed(float speed) {
 //     return true;
 // }
 
-int pathState = 0;
+int pathState = 0; // 0 for line following, 1 for turning at intersection
+long startTime = 0; // ms
+const long MAX_TURN_TIME = 1000; // ms
 
 void Chassis::followPath(bool turnRightAtIntersection) {
     
     switch(pathState) {
         case 0:
-            // Serial.printf("%d | %d\n", line.getLeftValue(), line.getRightValue());
             line.followLine(robotSpeed, &left_motor, &right_motor);
 
             if(line.checkForIntersection()) {
-            //     //turn to the right 
-                Serial.println("i am at an intersection");
-             
+                stop();
+                pathState = 1;
+                startTime = millis();
             }
-
-            // if (line.checkForIntersection())
-            //     pathState = 1;
 
             break;
         
-        // case 1:
-        //     if (turnToLine(turnRightAtIntersection))
-        //         pathState = 0;
+        case 1:
+            if (millis() - startTime >= MAX_TURN_TIME) {
+                pathState = 0;
+                stop();
+            } else {
+                left_motor.setSpeed(turnRightAtIntersection ? robotSpeed : -robotSpeed);
+                right_motor.setSpeed(turnRightAtIntersection ? -robotSpeed : robotSpeed);
+            }
 
-        //     break;
+            break;
     }
 }
 
