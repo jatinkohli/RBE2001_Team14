@@ -43,19 +43,39 @@ bool Chassis::moveTo(float distInCm) {
 //     return true;
 // }
 
+int pathState = 0;
+
 void Chassis::followPath(bool turnRightAtIntersection) {
-    line.followLine(robotSpeed, &left_motor, &right_motor);
+    
+    switch(pathState) {
+        case 0:
+            line.followLine(robotSpeed / 10, &left_motor, &right_motor);
+
+            // if (line.checkForIntersection())
+            //     pathState = 1;
+
+            break;
+        
+        // case 1:
+        //     if (turnToLine(turnRightAtIntersection))
+        //         pathState = 0;
+
+        //     break;
+    }
 }
 
 bool Chassis::turnToLine(bool turnRight) {
-    return true;
+    left_motor.setSpeed(turnRight ? robotSpeed/5 : -robotSpeed/5);
+    right_motor.setSpeed(turnRight ? -robotSpeed/5 : robotSpeed/5);
+
+    return line.checkNewLine(turnRight);
 }
 
 // Emergency Stop
 void Chassis::stop() {
     Serial.println("EMERGENCY STOP");
 
-//     left_motor.setSpeed(0);
-//     right_motor.setSpeed(0);
+    left_motor.setSpeed(0);
+    right_motor.setSpeed(0);
 }
 

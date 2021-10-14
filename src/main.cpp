@@ -71,7 +71,7 @@ const int GRIPPER_CLOSED = 180;    // deg for servo
 int effort = 0;
 int setpoint = 0;
 
-bool manualMode = true;
+bool manualMode = false;
 
 void setup() {
     Serial.begin(115200);
@@ -110,6 +110,8 @@ float getDistance() {           //correct ultrasonic distance
 }
 
 bool receivedKeyPress = false;
+int prevSetpoint = setpoint;
+bool paused = false;
 
 void loop() {
     //distance = ultrasonic.getDistanceCM(); //get the distance from the untrasonic
@@ -120,6 +122,18 @@ void loop() {
     { //servo?
         effort++;
     }
+    else if (key == KEY_TWO){     //estop
+        paused = !paused;
+
+        if (paused) {
+            prevSetpoint = setpoint;
+            setpoint = blueMotor.getPosition();
+            chassis.stop();
+        } else {
+            setpoint = prevSetpoint;
+            prevSetpoint = setpoint;
+        }
+    }
     else if (key == KEY_STOP){ //
         effort += 10;
     }
@@ -129,6 +143,11 @@ void loop() {
     else if (key == KEY_VOL_MINUS){
         effort--;
     }
+    // else if (key == KEY_RETURN){
+    //     chassis.followPath(true);
+    // }else if (key == KEY_ZERO){
+    //     chassis.followPath(false);
+    // }
     else if (key == KEY_SETUP){
         effort -= 10;
         //key == KEY_LEFT)

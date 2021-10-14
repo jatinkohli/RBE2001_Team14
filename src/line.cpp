@@ -10,6 +10,8 @@ void Line::setup() {
 void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_motor) {  //line following                                            
     unsigned long currTime = millis();
 
+    Serial.printf("%d | %d\n", analogRead(LEFT_LINE_SENSE), analogRead(RIGHT_LINE_SENSE));
+
     if(currTime - lastTime > LINE_FOLLOWING_INTERVAL) {
         //read sensors
         int leftReading = analogRead(LEFT_LINE_SENSE);
@@ -22,8 +24,8 @@ void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_
         float effort = error * kp;
 
         //command the motors
-        left_motor->setSpeed(baseSpeed - effort);
-        right_motor->setSpeed(baseSpeed + effort);
+        // left_motor->setSpeed(baseSpeed - effort);
+        // right_motor->setSpeed(baseSpeed + effort);
 
         lastTime = currTime;
     }
