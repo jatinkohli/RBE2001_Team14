@@ -28,8 +28,6 @@ bool Chassis::moveTo(float distInCm) {
 void Chassis::setSpeed(float speed) {
     left_motor.setSpeed(speed);
     right_motor.setSpeed(speed);
-
-    Serial.printf("%.3f | %.3f\n", left_motor.getCurrentDegrees(), right_motor.getCurrentDegrees());
 }
 
 // bool Chassis::moveFor(float speedInCmPerS) {
@@ -54,7 +52,7 @@ void Chassis::followPath(bool turnRightAtIntersection) {
     
     switch(pathState) {
         case 0:
-            Serial.printf("%d | %d\n", line.getLeftValue(), line.getRightValue());
+            // Serial.printf("%d | %d\n", line.getLeftValue(), line.getRightValue());
             line.followLine(robotSpeed, &left_motor, &right_motor);
 
             if(line.checkForIntersection()) {

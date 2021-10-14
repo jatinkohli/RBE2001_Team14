@@ -34,7 +34,7 @@ void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_
     float effort = (float)error * kp;    //kp currently 0.004
     effort += (float)errorAcc * ki;
 
-    Serial.printf("%d | %d | %d | %f\n", analogRead(LEFT_LINE_SENSE), analogRead(RIGHT_LINE_SENSE), error, effort);      //print the values
+    // Serial.printf("%d | %d | %d | %f\n", analogRead(LEFT_LINE_SENSE), analogRead(RIGHT_LINE_SENSE), error, effort);      //print the values
     
     //command the motors
     left_motor->setSpeed(baseSpeed + effort);   //calculation for wheel speed and wheel turn
@@ -43,13 +43,9 @@ void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_
     errorAcc = error + errorAcc;            //updating the accumulated error for the ki value
 }
 
-
-
-
 bool Line::checkForIntersection() {                 //check for intersection
-    
-    static int leftPrev = 0;
-    static int rightPrev = 0;
+    // static int leftPrev = 0;
+    // static int rightPrev = 0;
 
     unsigned long currTime = millis(); 
 
@@ -57,29 +53,28 @@ bool Line::checkForIntersection() {                 //check for intersection
         //read sensors
         int leftReading = analogRead(LEFT_LINE_SENSE);      //pin attach
         int rightReading = analogRead(RIGHT_LINE_SENSE);    //pin attach
-
-        //int error = leftReading- rightReading;              //error for turning on an intersection
             
         //Check left sensor
-        if(leftReading >= threshold && leftPrev >= threshold) {          //searchine for the back tape on the left side
-            //If left sensor meets threshold, watch for event when right meets threshold
-            //return rightReading >= threshold && rightPrev < threshold;
-            //return true;
-        } else if(rightReading >= threshold && rightPrev >= threshold) {  //search for black tape on the right side
-            //If right sensor meets threshold, watch for event when left meets threshold
-            //return leftPrev < threshold && leftReading >= threshold; 
-            //return true;
-        } else if(rightReading >= threshold && rightPrev >= threshold && leftReading >= threshold && leftPrev >= threshold)
+        // if(leftReading >= threshold && leftPrev >= threshold) {          //searchine for the back tape on the left side
+        //     //If left sensor meets threshold, watch for event when right meets threshold
+        //     //return rightReading >= threshold && rightPrev < threshold;
+        //     //return true;
+        // } else if(rightReading >= threshold && rightPrev >= threshold) {  //search for black tape on the right side
+        //     //If right sensor meets threshold, watch for event when left meets threshold
+        //     //return leftPrev < threshold && leftReading >= threshold; 
+        //     //return true;
+        // } else 
+        if(rightReading >= threshold /*&& rightPrev >= threshold*/ && leftReading >= threshold /*&& leftPrev >= threshold*/) {
             return true;          //search for black tape on both sides
-        
+        }
 
-        rightPrev = rightReading;       //previous reading from each line sensor
-        leftPrev = leftReading;         //previous reading from each line sensor
+        // rightPrev = rightReading;       //previous reading from each line sensor
+        // leftPrev = leftReading;         //previous reading from each line sensor
     }
 
     return false;
 }
-//;)
+
 //Checks for when romi has found a new line after turning at an intersection
 bool Line::checkNewLine(bool right) {                                                                //find the next line
     static int leftPrev2 = 0;
