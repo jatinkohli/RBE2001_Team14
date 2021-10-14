@@ -56,7 +56,7 @@ enum ROBOT_STATE {
 
 };
 
-ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
+//ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
 
 //--------------------------------------------------------------------------------------------------------------------------------
 const int STAGING_POS = 636;              //constants for positions of the arm
@@ -96,7 +96,7 @@ void setup() {
 float distance = 0;
 float oldDistance = 0;
 
-float getDistance() {           //correct ultrasonic distance
+float getDistance() {           //corrects the random errors from the untrasonic sensor
     oldDistance = distance;
     distance = ultrasonic.getDistanceCM();
     if(oldDistance == 0){
