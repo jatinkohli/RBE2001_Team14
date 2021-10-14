@@ -3,7 +3,7 @@
 // Class for the Chassis and everything on it (Drivetrain)
 const uint8_t BOOT_BTN_PIN = 0;
 
-float robotSpeed = 180; // Speed of the robot in ticks/s
+float robotSpeed = 18; // Speed of the robot in ticks/s
 
 Button bootButton(BOOT_BTN_PIN); // Create a button object for the built-in button on the ESP32
 Line line;
@@ -49,7 +49,7 @@ void Chassis::followPath(bool turnRightAtIntersection) {
     
     switch(pathState) {
         case 0:
-            line.followLine(robotSpeed / 10, &left_motor, &right_motor);
+            line.followLine(robotSpeed, &left_motor, &right_motor);
 
             // if (line.checkForIntersection())
             //     pathState = 1;
@@ -65,8 +65,8 @@ void Chassis::followPath(bool turnRightAtIntersection) {
 }
 
 bool Chassis::turnToLine(bool turnRight) {
-    left_motor.setSpeed(turnRight ? robotSpeed/5 : -robotSpeed/5);
-    right_motor.setSpeed(turnRight ? -robotSpeed/5 : robotSpeed/5);
+    left_motor.setSpeed(turnRight ? robotSpeed : -robotSpeed);
+    right_motor.setSpeed(turnRight ? -robotSpeed : robotSpeed);
 
     return line.checkNewLine(turnRight);
 }

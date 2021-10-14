@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <RBE1001Lib.h>
+#include <ESP32AnalogRead.h>
 
 class Line {
     public:
@@ -13,5 +14,6 @@ class Line {
     private:
         const unsigned long LINE_FOLLOWING_INTERVAL = 10;
         float kp = 0.04;
+        float ki = 0.003;
         int threshold = 1500; // value for line sensor array, >= denotes a line
 };
