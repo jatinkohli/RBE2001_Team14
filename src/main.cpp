@@ -58,11 +58,18 @@ enum ROBOT_STATE {
 //ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-const int STAGING_POS = 636;              //constants for positions of the arm
+const int STAGING_POS = 500; //636;              //constants for positions of the arm
 const int ROOF_25_PICKUP = 6122;       //+226 because an adjustment had ot be made from the origional measurement
-const int ROOF_25_PLACE = 7746;
+const int ROOF_25_PLACE = 7946; //7746;
 const int ROOF_45_PICKUP = 6122;       //+226 because an adjustment had ot be made from the origional measurement
-const int ROOF_45_PLACE = 3934;
+const int ROOF_45_PLACE = 3734; //3934;
+
+// cm for the ultrasonic to be from the object
+const float STAGING_DIST = 6.0;
+const float ROOF_45_PLACEDIST = 10.3;
+const float ROOF_45_PICKUPDIST = 12.3;
+const float ROOF_25_PLACEDIST = 7.9;
+const float ROOF_25_PICKUPDIST = 6.1;
 
 const int GRIPPER_OPEN = 80;       // deg for servo
 const int GRIPPER_CLOSED = 180;    // deg for servo
@@ -72,6 +79,9 @@ int setpoint = 0;
 
 bool manualMode = false;
 
+bool lineFollowing = false;
+bool wasLineFollowing = false;
+
 void setup() {
     Serial.begin(115200);
 
@@ -79,7 +89,8 @@ void setup() {
 
     blueMotor.setup();
     blueMotor.reset();
-    ultrasonic.attach(21, 14); //attach the ultrasonic
+    // ultrasonic.attach(21, 14); //attach the ultrasonic
+    ultrasonic.attach(21, 3); //attach the ultrasonic
     // ultrasonic.attach(SIDE_ULTRASONIC_TRIG, SIDE_ULTRASONIC_ECHO); //attach the ultrasonic
     gripper.attach(SERVO_PIN);                                      //attach the gripper
     gripperFeedback.attach(SERVO_FEEDBACK_SENSOR);                  //attack the gripper feedback sensor
@@ -90,6 +101,8 @@ void setup() {
     setpoint = 0;
 
     manualMode = false;
+    lineFollowing = false;
+    wasLineFollowing = false;
 }
 
 float distance = 0;
@@ -115,24 +128,29 @@ bool paused = false;
 void loop() {
     distance = ultrasonic.getDistanceCM(); //get the distance from the ultrasonic
 
-    int key = decoder.getKeyCode(true);
-    if (key == KEY_VOL_PLUS)
-    { //servo?
+    int key = decoder.getKeyCode();
+    if (key == KEY_VOL_PLUS) { //servo?
         effort++;
-    }
-    else if (key == KEY_TWO){     //estop
+    } else if (key == KEY_TWO) {     //estop
         paused = !paused;
+
+        Serial.println("EMERGENCY STOP");
 
         if (paused) {
             prevSetpoint = setpoint;
             setpoint = blueMotor.getPosition();
             chassis.stop();
+
+            wasLineFollowing = lineFollowing;
+            lineFollowing = false;
         } else {
             setpoint = prevSetpoint;
             prevSetpoint = setpoint;
+
+            lineFollowing = wasLineFollowing;
         }
     }
-    else if (key == KEY_STOP){ //
+    else if (key == KEY_STOP) { //
         effort += 10;
     }
     else if (key == KEY_RIGHT) {       //blue motor arm down
@@ -141,18 +159,16 @@ void loop() {
     else if (key == KEY_VOL_MINUS){
         effort--;
     }
-    // else if (key == KEY_RETURN){
-    //     chassis.followPath(true);
-    // }else if (key == KEY_ZERO){
-    //     chassis.followPath(false);
-    // }
+    else if (key == KEY_RETURN){
+        lineFollowing = true;
+    }else if (key == KEY_ZERO){
+        lineFollowing = false;
+    }
     else if (key == KEY_SETUP){
         effort -= 10;
-        //key == KEY_LEFT)
     }
-    else if (key == KEY_LEFT){          //blue motor arm up
+    else if (key == KEY_LEFT){         //blue motor arm up
         effort -= 100;
-        //Serial.println(effort);
     }
     else if (key == KEY_PLAY){         //preset staging platform button and position
         setpoint = STAGING_POS;
@@ -160,7 +176,7 @@ void loop() {
     else if (key == KEY_UP){           //preset 25 degree roof button and position for pickup
         setpoint = ROOF_25_PICKUP;
     }
-    else if (key == KEY_ENTER){         //preset 25 degreee roof button and position for placement
+    else if (key == KEY_ENTER){        //preset 25 degreee roof button and position for placement
         setpoint = ROOF_25_PLACE;
     }
     else if (key == KEY_DOWN){         //preset staging platform button and position
@@ -175,6 +191,8 @@ void loop() {
         manualMode = !manualMode;
         
         Serial.printf("ManualMode: %d\n", manualMode);
+    } else if (key == KEY_NINE){       //test the line following code
+        chassis.followPath(true);      //turn right at an intersection
     }
 
     effort = constrain(effort, -255, 255);
@@ -184,11 +202,16 @@ void loop() {
         blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
     else
         blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
-    
-    if (key != -1)
-        Serial.println(key);
+
+    if (lineFollowing)
+        chassis.followPath(true);
     else
-        Serial.printf("%ld | %d | %d | %.1f\n", blueMotor.getPosition(), effort, setpoint, distance);
+        chassis.stop();
+    
+    // if (key != -1)
+    //     Serial.println(key);
+    // else
+    //     Serial.printf("%ld | %d | %d | %.1f \ %d\n", blueMotor.getPosition(), effort, setpoint, distance, manualMode);
 
     // switch (robotState)        //state of the robot state machine in main()
     // {

@@ -3,8 +3,6 @@
 // Class for the Chassis and everything on it (Drivetrain)
 const uint8_t BOOT_BTN_PIN = 0;
 
-float robotSpeed = 18; // Speed of the robot in ticks/s
-
 Button bootButton(BOOT_BTN_PIN); // Create a button object for the built-in button on the ESP32
 Line line;
 
@@ -25,6 +23,13 @@ bool Chassis::moveTo(float distInCm) {
     right_motor.setSpeed(robotSpeed);
 
     return true;
+}
+
+void Chassis::setSpeed(float speed) {
+    left_motor.setSpeed(speed);
+    right_motor.setSpeed(speed);
+
+    Serial.printf("%.3f | %.3f\n", left_motor.getCurrentDegrees(), right_motor.getCurrentDegrees());
 }
 
 // bool Chassis::moveFor(float speedInCmPerS) {
@@ -49,7 +54,14 @@ void Chassis::followPath(bool turnRightAtIntersection) {
     
     switch(pathState) {
         case 0:
+            Serial.printf("%d | %d\n", line.getLeftValue(), line.getRightValue());
             line.followLine(robotSpeed, &left_motor, &right_motor);
+
+            if(line.checkForIntersection()) {
+            //     //turn to the right 
+                Serial.println("i am at an intersection");
+             
+            }
 
             // if (line.checkForIntersection())
             //     pathState = 1;
@@ -64,7 +76,7 @@ void Chassis::followPath(bool turnRightAtIntersection) {
     }
 }
 
-bool Chassis::turnToLine(bool turnRight) {
+bool Chassis::turnToLine(bool turnRight) {        //find the line on the other side of the field
     left_motor.setSpeed(turnRight ? robotSpeed : -robotSpeed);
     right_motor.setSpeed(turnRight ? -robotSpeed : robotSpeed);
 
@@ -73,8 +85,6 @@ bool Chassis::turnToLine(bool turnRight) {
 
 // Emergency Stop
 void Chassis::stop() {
-    Serial.println("EMERGENCY STOP");
-
     left_motor.setSpeed(0);
     right_motor.setSpeed(0);
 }

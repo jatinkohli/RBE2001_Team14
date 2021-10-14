@@ -7,6 +7,8 @@
 class Line {
     public:
         void setup();
+        int getLeftValue();
+        int getRightValue();
         void followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_motor);
         bool checkForIntersection();
         bool checkNewLine(bool right);
@@ -14,6 +16,6 @@ class Line {
     private:
         const unsigned long LINE_FOLLOWING_INTERVAL = 10;
         float kp = 0.04;
-        float ki = 0.003;
+        float ki = 0;// 0.003;
         int threshold = 1200; // value for line sensor array, >= denotes a line
 };

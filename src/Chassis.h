@@ -13,17 +13,21 @@
 
 class Chassis {
     public:
+        float robotSpeed = 100;//180; // Speed of the robot in ticks/s
+        
         void setup();
         bool moveTo(float distInCm);
+        void setSpeed(float speed);
         // void moveFor(float speedInCmPerS);
         void followPath(bool turnRightAtIntersection);
         bool turnToLine(bool turnRight);
         void stop();
+        
 
     private:
         const float WHEEL_DIAMETER = 2.75; // Wheel diameter in inches
         const float WHEEL_TRACK = 15; // Distance between wheels in cm
-        const float SENSOR_DISTANCE = 8; // Distance between center of wheel and line sensor in cm
+        const float SENSOR_DISTANCE = 8; // Distance between center of wheel and line sensor in cm        
 
         LeftMotor left_motor;
         RightMotor right_motor;

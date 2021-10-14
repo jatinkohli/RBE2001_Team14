@@ -8,33 +8,41 @@ void Line::setup() {
     pinMode(RIGHT_LINE_SENSE, INPUT);               //pin sensor
 }
 
+int Line::getLeftValue() {
+    return analogRead(LEFT_LINE_SENSE);
+}
+
+int Line::getRightValue() {
+    return analogRead(RIGHT_LINE_SENSE);
+}
+
 void Line::followLine(float baseSpeed, LeftMotor* left_motor, RightMotor* right_motor) {                           //line following      
 
     //unsigned long currTime = millis();
 
-    Serial.printf("%d | %d\n", analogRead(LEFT_LINE_SENSE), analogRead(RIGHT_LINE_SENSE));      //print the values
 
-    //if(currTime - lastTime > LINE_FOLLOWING_INTERVAL) {
-        //read sensors
-        int leftReading = analogRead(LEFT_LINE_SENSE);           //analog reading for the pin
-        int rightReading = analogRead(RIGHT_LINE_SENSE);         //analog reading for the pin
+    //read sensors
+    int leftReading = analogRead(LEFT_LINE_SENSE);           //analog reading for the pin
+    int rightReading = analogRead(RIGHT_LINE_SENSE);         //analog reading for the pin
 
-        //calculate error
-        int error = rightReading - leftReading;             //innitial error reading
-        static int errorAcc = rightReading - leftReading;   //for the ki value
+    //calculate error
+    int error = rightReading - leftReading;             //innitial error reading
 
-        //calculate "effort"
-        float effort = error * kp;    //kp currently 0.004
+    static int errorAcc = rightReading - leftReading;   //for the ki value
 
-        //command the motors
-        left_motor->setSpeed(baseSpeed + effort + errorAcc*-ki);   //calculation for wheel speed and wheel turn
-        right_motor->setSpeed(baseSpeed + effort + errorAcc*ki);    //calculation for wheel speed and wheel turn
+    //calculate "effort"
+    float effort = (float)error * kp;    //kp currently 0.004
+    effort += (float)errorAcc * ki;
 
-        errorAcc = error + errorAcc;            //updating the accumulated error for the ki value
+    Serial.printf("%d | %d | %d | %f\n", analogRead(LEFT_LINE_SENSE), analogRead(RIGHT_LINE_SENSE), error, effort);      //print the values
+    
+    //command the motors
+    left_motor->setSpeed(baseSpeed + effort);   //calculation for wheel speed and wheel turn
+    right_motor->setSpeed(baseSpeed - effort);    //calculation for wheel speed and wheel turn
 
-        //lastTime = currTime;
-    //}
+    errorAcc = error + errorAcc;            //updating the accumulated error for the ki value
 }
+
 
 
 
@@ -53,13 +61,17 @@ bool Line::checkForIntersection() {                 //check for intersection
         //int error = leftReading- rightReading;              //error for turning on an intersection
             
         //Check left sensor
-        if(leftReading >= threshold && leftPrev > threshold) {
+        if(leftReading >= threshold && leftPrev >= threshold) {          //searchine for the back tape on the left side
             //If left sensor meets threshold, watch for event when right meets threshold
-            return rightReading >= threshold && rightPrev < threshold;
-        } else if(rightReading > threshold) { //Check right sensor
+            //return rightReading >= threshold && rightPrev < threshold;
+            //return true;
+        } else if(rightReading >= threshold && rightPrev >= threshold) {  //search for black tape on the right side
             //If right sensor meets threshold, watch for event when left meets threshold
-            return leftPrev < threshold && leftReading >= threshold; 
-        }
+            //return leftPrev < threshold && leftReading >= threshold; 
+            //return true;
+        } else if(rightReading >= threshold && rightPrev >= threshold && leftReading >= threshold && leftPrev >= threshold)
+            return true;          //search for black tape on both sides
+        
 
         rightPrev = rightReading;       //previous reading from each line sensor
         leftPrev = leftReading;         //previous reading from each line sensor
