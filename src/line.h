@@ -15,7 +15,7 @@ class Line {
     
     private:
         const unsigned long LINE_FOLLOWING_INTERVAL = 10;
-        float kp = 0.025;
+        float kp = 0.04; // 0.025;
         float ki = 0;
         int threshold = 2000; // value for line sensor array, >= denotes a line
 };

@@ -1,17 +1,12 @@
 #include <Chassis.h>
 
 // Class for the Chassis and everything on it (Drivetrain)
-const uint8_t BOOT_BTN_PIN = 0;
 
-Button bootButton(BOOT_BTN_PIN); // Create a button object for the built-in button on the ESP32
-Line line;
 
 // Initializes Chassis fields
 void Chassis::setup() {
     pinMode(LEFT_LINE_SENSE, INPUT);
     pinMode(RIGHT_LINE_SENSE, INPUT);
-
-    bootButton.Init();
 
     line.setup();
 
@@ -54,7 +49,7 @@ void Chassis::turn(float speed, bool right) {
 void Chassis::followPath(bool turnRightAtIntersection) {
     switch(pathState) {
         case 0:
-            line.followLine(robotSpeed / 1.5, &left_motor, &right_motor);
+            line.followLine(robotSpeed, &left_motor, &right_motor);
 
             if(line.checkForIntersection()) {
                 stop();
@@ -69,8 +64,8 @@ void Chassis::followPath(bool turnRightAtIntersection) {
                 pathState = 0;
                 stop();
             } else {
-                left_motor.setSpeed(turnRightAtIntersection ? robotSpeed : -robotSpeed);
-                right_motor.setSpeed(turnRightAtIntersection ? -robotSpeed : robotSpeed);
+                left_motor.setSpeed(turnRightAtIntersection ? robotSpeed * 1.4 : -robotSpeed * 1.4);
+                right_motor.setSpeed(turnRightAtIntersection ? -robotSpeed * 1.4 : robotSpeed * 1.4);
             }
 
             break;

@@ -52,20 +52,20 @@ enum ROBOT_STATE {
     SwitchSides
 };
 
-ROBOT_STATE robotState = ArriveRoof;    //innitialize the state machine 
+ROBOT_STATE robotState = ArriveRoof;    //initialize the state machine 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-const int STAGING_POS = 500; //636;              //constants for positions of the arm
+const int STAGING_POS = 620; //636;              //constants for positions of the arm
 const int ROOF_PICKUP = 6122;
 const int ROOF_25_PLACE = 7840; //7946;
-const int ROOF_45_PLACE = 3734; //3934;
+const int ROOF_45_PLACE = 3550; //3600;
 
 // cm for the ultrasonic to be from the object
 const float OFFSET = 0.68; // offset to account for stopping time
 
 const float STAGING_DIST = 5.6 + OFFSET;
 const float ROOF_45_PLACE_DIST = 10.3 + OFFSET;
-const float ROOF_45_PICKUP_DIST = 12.3 + OFFSET;
+const float ROOF_45_PICKUP_DIST = 11.8 + OFFSET;
 const float ROOF_25_PLACE_DIST = 7.0 + OFFSET;
 const float ROOF_25_PICKUP_DIST = 5.5 + OFFSET;
 
@@ -106,19 +106,6 @@ void setup() {
 float distance = 0;
 float oldDistance = 0;
 
-// float getDistance() {           //corrects the random errors from the untrasonic sensor
-//     oldDistance = distance;
-//     distance = ultrasonic.getDistanceCM();
-//     if(oldDistance == 0) {
-//         oldDistance = distance;
-//     }
-//     if(abs(distance - oldDistance) >= 4){
-//         distance = oldDistance;
-//         // Serial.println("filtered bad reading");
-//     }
-//     return distance;
-// }
-
 bool receivedKeyPress = false;
 int prevSetpoint = setpoint;
 bool paused = false;
@@ -131,37 +118,13 @@ int startTime = 0;
 int numConfirmations = 0;
 bool hasNewPlate = false;
 
+bool readyToSwitch = false;
+
 void loop() {
     // distance = ultrasonic.getDistanceCM(); //get the distance from the ultrasonic
 
     int key = decoder.getKeyCode();
-        
-    //     Serial.printf("ManualMode: %d\n", manualMode);
-
-    // effort = constrain(effort, -255, 255);
-
-    // //(not both at the same time)
-    // if (manualMode)
-    //     blueMotor.setEffortCorrected(effort); //use the corrected effort in order to place the arm manually
-    // else
-    //     blueMotor.setPosition(setpoint); //use the perdetermined locations to position the arm
-
-    // if (lineFollowing) {
-    //     if(getDistance() <= STAGING_DIST) {            
-    //         chassis.stop();
-    //         Serial.println(":)");
-    //     } else {
-    //         chassis.followPath(true);
-    //     }
-    // }
-    // else
-    //     chassis.stop();
     
-    // if (key != -1)
-    //     Serial.println(key);
-    // else
-    //     Serial.printf("%ld | %d | %d | %.1f \ %d\n", blueMotor.getPosition(), effort, setpoint, distance, manualMode);
-
     switch (robotState)        //state of the robot state machine in main()
     {
         case ArriveRoof: //arrive following the line at a roof
@@ -204,7 +167,7 @@ void loop() {
 
                     startTime = millis();
                     robotState = LeaveRoof;
-                } else if (millis() - startTime >= 1200) {
+                } else if (millis() - startTime >= 3000) {
                     chassis.setSpeed(-chassis.robotSpeed);
                 }
 
@@ -249,7 +212,7 @@ void loop() {
             break;
 
         case ReplaceCollector:
-            if (millis() - startTime < 2000) {
+            if (millis() - startTime < 3000) {
                 blueMotor.setPosition(STAGING_POS);
             } else if (key == KEY_ENTER) {
                 numConfirmations++;
@@ -263,11 +226,11 @@ void loop() {
                     startTime = millis();
                 }
             } else if (hasNewPlate) {
-                if (millis() - startTime >= 14500) {
+                if (millis() - startTime >= 13200) {
                     chassis.stop();
                     hasNewPlate = false;
                     robotState = ReturnRoof;
-                } else if (millis() - startTime >= 12000) {
+                } else if (millis() - startTime >= 10000) {
                     blueMotor.setPosition(ROOF_PICKUP);
                     chassis.turn(chassis.robotSpeed * 1.5, false);
                 } else {
@@ -281,10 +244,12 @@ void loop() {
         case SecondVisit:                   //starts the state where the panel is dropped off at the h
             if (millis() - startTime >= 3000) {
                 if (receivedKeyPress) {
-                    if (millis() - startTime >= 1900) {          //time running until the end of the state
+                    if (millis() - startTime >= 4000) {          //time running until the end of the state
                         chassis.stop();
                         
                         receivedKeyPress = false;
+                        readyToSwitch = false;
+                        closeEnoughCount = 0;
 
                         startTime = millis();
                         robotState = SwitchSides;
@@ -305,21 +270,19 @@ void loop() {
 
             break;
 
-        case SwitchSides:
-            chassis.stop();
-            break;
-
-        case ReturnRoof:                                   //return to the roof for the deposit of the new panel
+        case ReturnRoof: {                                 //return to the roof for the deposit of the new panel
             chassis.followPath(on45Side); //follow the line otherwise, if there is an intersection, turn left
             gripper.write(GRIPPER_CLOSED);
 
             float dist = ultrasonic.getDistanceCM();
             Serial.println(dist);
 
-            if (dist <= (on45Side ? ROOF_45_PLACE_DIST : ROOF_25_PLACE_DIST))
+            if (dist <= (on45Side ? ROOF_45_PLACE_DIST : ROOF_25_PLACE_DIST)) {
                 closeEnoughCount++;
-            else
+            }
+            else {
                 closeEnoughCount = 0;
+            }
 
             if (closeEnoughCount >= 5) {
                 robotState = SecondVisit; //set to the first position at a certain distance
@@ -332,7 +295,38 @@ void loop() {
                 chassis.stop();
             }
 
+        }
+        break;
+
+        case SwitchSides: {
+
+            int mod = on45Side ? 1 : -1;
+
+            chassis.left_motor.startMoveFor(mod * 180, 100);
+            chassis.right_motor.moveFor(mod * -180, 100);
+
+            long startTime = millis();
+            while ((millis() - startTime) < 5000)
+                chassis.followPath(!on45Side);
+
+            chassis.left_motor.startMoveFor(mod * -180, 100);
+            chassis.right_motor.moveFor(mod * 180, 100);
+
+            startTime = millis();
+            while ((millis() - startTime) < 13000)
+                chassis.followPath(!on45Side);
+
+            chassis.left_motor.startMoveFor(mod * -45, 100);
+            chassis.right_motor.moveFor(mod * 45, 100);
+
+            on45Side = !on45Side;
+
+            chassis.stop();
+
+            robotState = ArriveRoof;
+
             break;
+        }   
     }
 
     if (key == KEY_TWO) {     //estop

@@ -24,13 +24,15 @@ class Chassis {
         bool turnToLine(bool turnRight);
         void stop();
 
+        LeftMotor left_motor;
+        RightMotor right_motor;
+
     private:
+        Line line;
+
         const float WHEEL_DIAMETER = 2.75; // Wheel diameter in inches
         const float WHEEL_TRACK = 15; // Distance between wheels in cm
         const float SENSOR_DISTANCE = 8; // Distance between center of wheel and line sensor in cm        
-
-        LeftMotor left_motor;
-        RightMotor right_motor;
 
         int pathState = 0; // 0 for line following, 1 for turning at intersection
         long startTime = 0; // ms
